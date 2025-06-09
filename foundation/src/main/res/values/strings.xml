@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="payment_kind_book">Book</string>
+  <string name="payment_kind_buy">Buy</string>
+  <string name="payment_kind_checkout">Checkout</string>
+  <string name="payment_kind_donate">Donate</string>
+  <string name="payment_kind_order">Order</string>
+  <string name="payment_kind_pay">Pay</string>
+  <string name="payment_kind_plain">Plain</string>
+  <string name="payment_kind_subscribe">Subscribe</string>
+
+  
+  <string name="initial_newcard_number">Card number</string>
+  <string name="initial_newcard_number_placeholder">0000 0000 0000 0000</string>
+  
+  <string name="initial_newcard_save">Save the card for future payments</string>
+  <string name="initial_newcard_name">Card name</string>
+  <string name="initial_newcard_name_placeholder">Name your card</string>
+
+  <string name="initial_or_pay_by_card">Or pay by card</string>
+</resources>
