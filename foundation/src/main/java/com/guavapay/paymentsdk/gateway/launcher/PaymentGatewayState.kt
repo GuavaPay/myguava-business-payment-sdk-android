@@ -17,4 +17,6 @@ data class PaymentGatewayState(
   @Stable fun interface PaymentGatewayComposableDecorator : Serializable {
     @Composable fun Decorate(content: @Composable () -> Unit)
   }
+
+  companion object
 }
