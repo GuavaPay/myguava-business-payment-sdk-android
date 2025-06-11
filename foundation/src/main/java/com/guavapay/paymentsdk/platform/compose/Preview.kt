@@ -14,8 +14,21 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.guavapay.paymentsdk.gateway.banking.PaymentAmount
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetworks.AMEX
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetworks.DINERS_CLUB
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetworks.DISCOVER
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetworks.MASTERCARD
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetworks.VISA
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardType.CREDIT
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardType.DEBIT
+import com.guavapay.paymentsdk.gateway.banking.PaymentInstruments
+import com.guavapay.paymentsdk.gateway.banking.PaymentMethod.Card
+import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayState
 
-@Composable internal fun PreviewTheme(content: @Composable () -> Unit) {
+internal object PreviewScope
+
+@Composable internal fun PreviewTheme(content: @Composable context(PreviewScope) () -> Unit) {
   val isDarkTheme = isSystemInDarkTheme()
 
   val lightColorScheme = lightColorScheme(primary = Color(0xFF2E7D32))
@@ -41,6 +54,16 @@ import androidx.compose.ui.unit.sp
   )
 
   MaterialTheme(colorScheme = colorScheme, typography = typography, shapes = shapes) {
-    Surface(color = MaterialTheme.colorScheme.surface, content = content)
+    Surface(color = MaterialTheme.colorScheme.surface) {
+      with(PreviewScope) {
+        content()
+      }
+    }
   }
 }
+
+context(_: PreviewScope) internal fun PaymentGatewayState.Companion.demo() = PaymentGatewayState(
+  merchant = "Demo Store",
+  instruments = PaymentInstruments(methods = setOf(Card(networks = setOf(VISA, MASTERCARD, AMEX, DISCOVER, DINERS_CLUB), cardtypes = setOf(CREDIT, DEBIT)))),
+  amount = PaymentAmount(java.math.BigDecimal("20.00"), java.util.Currency.getInstance(java.util.Locale.US))
+)
