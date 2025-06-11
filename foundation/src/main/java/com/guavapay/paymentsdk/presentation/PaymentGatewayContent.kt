@@ -28,11 +28,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
-import com.guavapay.paymentsdk.gateway.banking.PaymentAmount
-import com.guavapay.paymentsdk.gateway.banking.PaymentInstruments
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
 import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayState
 import com.guavapay.paymentsdk.platform.compose.PreviewTheme
+import com.guavapay.paymentsdk.platform.compose.demo
 import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.WINDOW_ANIMATION_DURATION
 
 @Composable internal fun PaymentGatewayContent(state: PaymentGatewayState, isOverlayLayoutVisible: Boolean, dismiss: (PaymentResult) -> Unit) {
@@ -85,17 +84,6 @@ import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.WIN
 
 @PreviewLightDark @Composable private fun PaymentGatewayContentPreview() {
   PreviewTheme {
-    PaymentGatewayContent(
-      state = PaymentGatewayState(
-        merchant = "Demo Store",
-        instruments = PaymentInstruments(),
-        amount = PaymentAmount(
-          java.math.BigDecimal("20.00"),
-          java.util.Currency.getInstance(java.util.Locale.US)
-        )
-      ),
-      isOverlayLayoutVisible = true,
-      dismiss = {}
-    )
+    PaymentGatewayContent(state = PaymentGatewayState.demo(), isOverlayLayoutVisible = true, dismiss = {})
   }
 }
