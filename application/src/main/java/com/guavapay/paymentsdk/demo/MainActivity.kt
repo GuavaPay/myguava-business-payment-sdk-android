@@ -31,6 +31,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -86,7 +87,7 @@ class MainActivity : ComponentActivity() {
   var result by rememberSaveable { mutableStateOf<PaymentResult?>(null) }
   var processing by rememberSaveable { mutableStateOf(false) }
 
-  var amount by rememberSaveable { mutableStateOf(100.0f) }
+  var amount by rememberSaveable { mutableIntStateOf(100) }
   var amountText by rememberSaveable { mutableStateOf("100") }
 
   var visaEnabled by rememberSaveable { mutableStateOf(true) }
@@ -237,7 +238,10 @@ class MainActivity : ComponentActivity() {
         scope.launch(CoroutineExceptionHandler { _, e ->
           PaymentResult.Failed(PaymentResult.Failed.Error("null", e.message ?: "Unknown error"))
           processing = false
-        }) { gateway.start() }
+        }) {
+          gateway.start()
+          processing = false
+        }
       }
     )
 
@@ -250,10 +254,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable private fun AmountConfigurationCard(
-  amount: Float,
+  amount: Int,
   amountText: String,
   currency: Currency,
-  onAmountChange: (Float) -> Unit,
+  onAmountChange: (Int) -> Unit,
   onAmountTextChange: (String) -> Unit
 ) {
   Card(
@@ -277,7 +281,7 @@ class MainActivity : ComponentActivity() {
         value = amountText,
         onValueChange = { newValue ->
           onAmountTextChange(newValue)
-          newValue.toFloatOrNull()?.let { onAmountChange(it) }
+          newValue.toIntOrNull()?.let { onAmountChange(it) }
         },
         label = { Text("Amount (${currency.currencyCode})") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -287,15 +291,15 @@ class MainActivity : ComponentActivity() {
       Spacer(modifier = Modifier.height(8.dp))
 
       Text(
-        text = "Slider: $${amount.roundToInt()}",
+        text = "Slider: $${amount}",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant
       )
 
       Slider(
-        value = amount,
+        value = amount.toFloat(),
         onValueChange = { newAmount ->
-          onAmountChange(newAmount)
+          onAmountChange(newAmount.roundToInt())
           onAmountTextChange(newAmount.roundToInt().toString())
         },
         valueRange = 1f..1000f,
@@ -460,7 +464,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable private fun PaymentButton(
-  amount: Float,
+  amount: Int,
   state: PaymentGatewayState,
   processing: Boolean,
   cardEnabled: Boolean,
