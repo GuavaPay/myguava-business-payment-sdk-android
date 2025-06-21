@@ -1,4 +1,4 @@
-package com.guavapay.paymentsdk.platform.compose
+package com.guavapay.paymentsdk.presentation.platform
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable

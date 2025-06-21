@@ -10,7 +10,7 @@ plugins {
 
 android {
   namespace = "com.guavapay.paymentsdk"
-  compileSdk = 35
+  compileSdk = 36
 
   defaultConfig {
     minSdk = 21
@@ -125,7 +125,12 @@ dependencies {
   implementation(libs.androidx.lifecycle.runtime)
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.lifecycle.viewmodel)
+  implementation(libs.androidx.lifecycle.viewmodel.navigation3)
   implementation(libs.androidx.appcompat)
+  implementation(libs.androidx.startup)
+
+  implementation(libs.androidx.navigation3.runtime)
+  implementation(libs.androidx.navigation3.ui)
 
   implementation(platform(libs.compose.bom))
   implementation(libs.compose.ui.core)

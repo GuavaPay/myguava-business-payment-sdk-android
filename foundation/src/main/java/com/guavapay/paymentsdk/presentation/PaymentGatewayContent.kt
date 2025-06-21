@@ -1,6 +1,7 @@
 package com.guavapay.paymentsdk.presentation
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -23,21 +25,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
-import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayState
-import com.guavapay.paymentsdk.platform.compose.PreviewTheme
-import com.guavapay.paymentsdk.platform.compose.demo
 import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.WINDOW_ANIMATION_DURATION
+import com.guavapay.paymentsdk.presentation.navigation.Navigation
+import com.guavapay.paymentsdk.presentation.platform.LocalTokensProvider
+import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
 
-@Composable internal fun PaymentGatewayContent(state: PaymentGatewayState, isOverlayLayoutVisible: Boolean, dismiss: (PaymentResult) -> Unit) {
-  val configuration = LocalConfiguration.current
-  val maxHeight = configuration.screenHeightDp.dp * 0.9f
-
+@Composable internal fun PaymentGatewayContent(isOverlayLayoutVisible: Boolean, dismiss: (PaymentResult) -> Unit) {
   Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
     AnimatedVisibility(
       visible = isOverlayLayoutVisible,
@@ -47,7 +45,7 @@ import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.WIN
       Box(
         modifier = Modifier
           .fillMaxSize()
-          .background(Color.Black.copy(alpha = 0.5f))
+          .background(MaterialTheme.colorScheme.scrim)
           .pointerInput(Unit) {
             detectTapGestures { dismiss(PaymentResult.Canceled) }
           }
@@ -68,15 +66,16 @@ import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.WIN
       Card(
         modifier = Modifier
           .fillMaxWidth()
-          .heightIn(max = maxHeight)
+          .heightIn(max = LocalWindowInfo.current.containerSize.height.dp * 0.9f)
           .windowInsetsPadding(WindowInsets.ime)
-          .shadow(8.dp, shape = MaterialTheme.shapes.extraLarge)
-          .clip(MaterialTheme.shapes.extraLarge),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+          .shadow(0.dp)
+          .clip(MaterialTheme.shapes.extraLarge)
+          .animateContentSize(animationSpec = tween(durationMillis = WINDOW_ANIMATION_DURATION)),
+        colors = LocalTokensProvider.current.card(),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = MaterialTheme.shapes.extraLarge
+        shape = MaterialTheme.shapes.extraLarge.copy(bottomStart = CornerSize(0), bottomEnd = CornerSize(0))
       ) {
-        PaymentGatewayMainPage(state = state, dismiss = dismiss)
+        Navigation(actions = Navigation.Actions(finish = dismiss))
       }
     }
   }
@@ -84,6 +83,6 @@ import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.WIN
 
 @PreviewLightDark @Composable private fun PaymentGatewayContentPreview() {
   PreviewTheme {
-    PaymentGatewayContent(state = PaymentGatewayState.demo(), isOverlayLayoutVisible = true, dismiss = {})
+    PaymentGatewayContent(isOverlayLayoutVisible = true, dismiss = {})
   }
 }

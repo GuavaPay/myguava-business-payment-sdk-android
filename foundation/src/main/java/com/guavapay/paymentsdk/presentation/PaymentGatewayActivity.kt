@@ -2,23 +2,45 @@
 
 package com.guavapay.paymentsdk.presentation
 
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.WindowManager.LayoutParams.FLAG_SECURE
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.core.content.IntentCompat.getSerializableExtra
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
+import com.guavapay.paymentsdk.gateway.launcher.LocalGatewayState
 import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayState
 import com.guavapay.paymentsdk.platform.function.ℓ
 
 internal class PaymentGatewayActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    enableSecureFlags()
     enableEdgeToEdge()
-    setContent { PaymentGatewayBottomSheet(ensurePaymentState() ?: return@setContent, ::finishWithResult) }
+    setContent {
+      CompositionLocalProvider(LocalGatewayState provides (ensurePaymentState() ?: return@setContent)) {
+        PaymentGatewayBottomSheet(::finishWithResult)
+      }
+    }
   }
+
+  override fun onResume() {
+    super.onResume()
+    enableSecureFlags()
+  }
+
+  override fun onPause() {
+    super.onPause()
+    val am = getSystemService(ACTIVITY_SERVICE) as ActivityManager
+    am.appTasks.forEach { task -> task.setExcludeFromRecents(true) }
+  }
+
+  private fun enableSecureFlags() = window.setFlags(FLAG_SECURE, FLAG_SECURE)
 
   private fun ensurePaymentState() =
     getSerializableExtra(intent, EXTRA_PAYMENT_STATE, PaymentGatewayState::class.java) ?: ℓ {

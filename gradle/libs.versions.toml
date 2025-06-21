@@ -6,8 +6,12 @@ androidx-core = "1.16.0"
 androidx-lifecycle = "2.9.0"
 androidx-activity = "1.10.1"
 androidx-appcompat = "1.7.0"
+androidx-startup = "1.2.0"
 androidx-espesso-core = "3.6.1"
 androidx-junit = "1.2.1"
+
+nav3Core = "1.0.0-alpha01"
+lifecycleViewmodelNav3 = "1.0.0-alpha01"
 
 compose-bom = "2025.05.01"
 
@@ -28,8 +32,10 @@ activity-ktx = "1.10.1"
 androidx-core = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core" }
 androidx-lifecycle-runtime = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-viewmodel = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-viewmodel-navigation3 = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-navigation3", version.ref = "lifecycleViewmodelNav3" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidx-activity" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "androidx-appcompat" }
+androidx-startup = { group = "androidx.startup", name = "startup-runtime", version.ref = "androidx-startup" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "androidx-espesso-core" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidx-junit" }
 
@@ -39,6 +45,9 @@ compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 compose-ui-test = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+
+androidx-navigation3-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "nav3Core" }
+androidx-navigation3-ui = { group = "androidx.navigation3", name = "navigation3-ui", version.ref = "nav3Core" }
 
 okhttp-bom = { group = "com.squareup.okhttp3", name = "okhttp-bom", version.ref = "okhttp" }
 okhttp-core = { group = "com.squareup.okhttp3", name = "okhttp" }

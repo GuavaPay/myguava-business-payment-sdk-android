@@ -1,5 +1,6 @@
 package com.guavapay.paymentsdk.gateway.banking
 
+import java.util.Locale
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetworks.AMEX
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetworks.DINERS_CLUB
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetworks.DISCOVER
@@ -24,7 +25,8 @@ sealed interface PaymentMethod : Serializable {
     val authmethods: Set<GPayAuthMethods> = setOf(PAN_ONLY, CRYPTOGRAM_3DS),
     val networks: Set<PaymentCardNetworks> = setOf(VISA, MASTERCARD, AMEX, UNIONPAY, DISCOVER, DINERS_CLUB),
     val cardtypes: Set<PaymentCardType> = setOf(DEBIT, CREDIT),
-    val ordertype: GPayOrderType = GPayOrderType.Pay
+    val ordertype: GPayOrderType = GPayOrderType.Pay,
+    val locale: Locale? = null
   ) : PaymentMethod
 
   data class Card(

@@ -5,14 +5,18 @@ import androidx.compose.runtime.Stable
 import com.guavapay.paymentsdk.gateway.banking.PaymentAmount
 import com.guavapay.paymentsdk.gateway.banking.PaymentInstruments
 import com.guavapay.paymentsdk.gateway.banking.PaymentKind
+import com.guavapay.paymentsdk.presentation.looknfeel.PrebuiltSdkTheme
+import com.guavapay.paymentsdk.presentation.platform.requiredStaticCompositionLocalOf
 import java.io.Serializable
+
+internal val LocalGatewayState = requiredStaticCompositionLocalOf<PaymentGatewayState>()
 
 data class PaymentGatewayState(
   val merchant: String,
   val instruments: PaymentInstruments,
   val amount: PaymentAmount,
   val kind: PaymentKind = PaymentKind.Pay,
-  val decorator: PaymentGatewayComposableDecorator = PaymentGatewayComposableDecorator { it() }
+  val decorator: PaymentGatewayComposableDecorator = PaymentGatewayComposableDecorator { PrebuiltSdkTheme { it() } }
 ) : Serializable {
   @Stable fun interface PaymentGatewayComposableDecorator : Serializable {
     @Composable fun Decorate(content: @Composable () -> Unit)

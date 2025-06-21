@@ -34,7 +34,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,10 +56,12 @@ import com.guavapay.paymentsdk.gateway.banking.PaymentCardType.DEBIT
 import com.guavapay.paymentsdk.gateway.banking.PaymentInstruments
 import com.guavapay.paymentsdk.gateway.banking.PaymentMethod
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
+import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayCoroutineScope
 import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayState
 import com.guavapay.paymentsdk.gateway.launcher.rememberPaymentGateway
 import com.guavapay.paymentsdk.gateway.vendors.googlepay.GPayEnvironment
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.util.Currency
 import java.util.Locale
@@ -83,7 +84,6 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable private fun PaymentDemoContent() {
-  val scope = rememberCoroutineScope()
   var result by rememberSaveable { mutableStateOf<PaymentResult?>(null) }
   var processing by rememberSaveable { mutableStateOf(false) }
 
@@ -104,10 +104,12 @@ class MainActivity : ComponentActivity() {
   var googlePayEnabled by rememberSaveable { mutableStateOf(true) }
   var savedCardEnabled by rememberSaveable { mutableStateOf(false) }
 
+  var usePrebuiltTheme by rememberSaveable { mutableStateOf(false) }
+
   val state = remember(
     amount, visaEnabled, mastercardEnabled, amexEnabled, dinnersEnabled,
     unionpayEnabled, discoverEnabled, debitEnabled, creditEnabled,
-    cardEnabled, googlePayEnabled, savedCardEnabled
+    cardEnabled, googlePayEnabled, savedCardEnabled, usePrebuiltTheme
   ) {
     val selectedSchemes = mutableSetOf<PaymentCardNetworks>().apply {
       if (visaEnabled) add(VISA)
@@ -146,15 +148,26 @@ class MainActivity : ComponentActivity() {
       }
     }
 
-    PaymentGatewayState(
-      decorator = { PaymentSdkTheme(content = it) },
-      merchant = "GuavaPay Demo Store",
-      instruments = PaymentInstruments(methods = selectedMethods),
-      amount = PaymentAmount(
-        value = amount.toBigDecimal(),
-        currency = Currency.getInstance(Locale.getDefault()),
+    if (usePrebuiltTheme) {
+      PaymentGatewayState(
+        merchant = "GuavaPay Demo Store",
+        instruments = PaymentInstruments(methods = selectedMethods),
+        amount = PaymentAmount(
+          value = amount.toBigDecimal(),
+          currency = Currency.getInstance(Locale.getDefault()),
+        )
       )
-    )
+    } else {
+      PaymentGatewayState(
+        decorator = { PaymentSdkTheme(content = it) },
+        merchant = "GuavaPay Demo Store",
+        instruments = PaymentInstruments(methods = selectedMethods),
+        amount = PaymentAmount(
+          value = amount.toBigDecimal(),
+          currency = Currency.getInstance(Locale.getDefault()),
+        )
+      )
+    }
   }
 
   val gateway = rememberPaymentGateway(state)
@@ -172,7 +185,33 @@ class MainActivity : ComponentActivity() {
       color = MaterialTheme.colorScheme.onBackground
     )
 
-    Spacer(modifier = Modifier.height(24.dp))
+    Spacer(modifier = Modifier.height(16.dp))
+
+    Card(
+      modifier = Modifier.fillMaxWidth(),
+      colors = CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.surface
+      ),
+      shape = MaterialTheme.shapes.large
+    ) {
+      Column(
+        modifier = Modifier.padding(20.dp)
+      ) {
+        Text(
+          text = "Theme Selection",
+          style = MaterialTheme.typography.titleLarge,
+          color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        CheckboxRow(
+          text = "Use prebuilt SDK theme",
+          checked = usePrebuiltTheme,
+          onCheckedChange = { usePrebuiltTheme = it }
+        )
+      }
+    }
+
+    Spacer(modifier = Modifier.height(16.dp))
 
     AmountConfigurationCard(
       amount = amount,
@@ -233,23 +272,23 @@ class MainActivity : ComponentActivity() {
       googlePayEnabled = googlePayEnabled,
       savedCardEnabled = savedCardEnabled,
       onPayClick = {
-        processing = true
+        val scope = PaymentGatewayCoroutineScope()
 
+        processing = true
         scope.launch(CoroutineExceptionHandler { _, e ->
-          PaymentResult.Failed(PaymentResult.Failed.Error("null", e.message ?: "Unknown error"))
+          result = PaymentResult.Failed(PaymentResult.Failed.Error("null", e.message ?: "Unknown error"))
           processing = false
         }) {
-          gateway.start()
+          result = gateway.start()
           processing = false
+          scope.cancel()
         }
       }
     )
 
     Spacer(modifier = Modifier.height(24.dp))
 
-    result?.let { result ->
-      PaymentResultCard(result = result)
-    }
+    result?.let { result -> PaymentResultCard(result = result) }
   }
 }
 

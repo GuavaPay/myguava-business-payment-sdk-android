@@ -1,0 +1,30 @@
+package com.guavapay.paymentsdk.presentation.looknfeel
+
+import androidx.compose.ui.graphics.Color
+
+internal val BrandPrimary = Color(0xFFBAF400)
+internal val BrandFocus = Color(0xFF9AD100)
+internal val BrandOnPrimary = Color(0xFF1B1C1D)
+internal val BrandSurface = Color(0xFFFFFFFF)
+internal val BrandOnSurface = Color(0xFF1B1C1D)
+internal val BrandInputBackground = Color(0xFFFAFAFB)
+internal val BrandHint = Color(0xFF8D8E91)
+internal val BrandDivider = Color(0xFFEFEFF0)
+internal val BrandOutline = Color(0xFF6C6D70)
+internal val BrandDisabled = Color(0xFFE3E3E5)
+internal val BrandOnDisabled = Color(0xFFB1B2B4)
+internal val BrandError = Color(0xFFFF3F2D)
+internal val BrandOnFocus = Color(0xFFFFFFFF)
+
+internal val BrandPrimaryDark = Color(0xFFB7F000)
+internal val BrandFocusDark = Color(0xFF9AD100)
+internal val BrandOnPrimaryDark = Color(0xFF1B1C1D)
+internal val BrandSurfaceDark = Color(0xFF171717)
+internal val BrandOnSurfaceDark = Color(0xFFE0E0E0)
+internal val BrandInputBackgroundDark = Color(0xFF2A2A2A)
+internal val BrandHintDark = Color(0xFF8D8E91)
+internal val BrandDividerDark = Color(0xFF3A3A3A)
+internal val BrandOutlineDark = Color(0xFF8D8E91)
+internal val BrandDisabledDark = Color(0xFF424242)
+internal val BrandOnDisabledDark = Color(0xFF6C6D70)
+internal val BrandErrorDark = Color(0xFFFF8D85)

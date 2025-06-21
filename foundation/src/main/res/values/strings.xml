@@ -14,9 +14,13 @@
   <string name="initial_newcard_number_placeholder">0000 0000 0000 0000</string>
   <string name="initial_newcard_expiration">Expiration date</string>
   <string name="initial_newcard_expiration_placeholder">MM/YY</string>
-  <string name="initial_newcard_cvv">CVV</string>
+  <string name="initial_newcard_cvv">Security code</string>
   <string name="initial_newcard_cvv_placeholder">CVV</string>
   <string name="initial_newcard_save">Save the card for future payments</string>
   <string name="initial_newcard_name">Card name</string>
   <string name="initial_newcard_name_placeholder">Name your card</string>
+  
+  <string name="error_unable_to_identify_card">Unable to identify card</string>
+  <string name="error_invalid_card_number">Invalid card number</string>
+  <string name="error_payment_network_not_supported">Payment network not supported</string>
 </resources>

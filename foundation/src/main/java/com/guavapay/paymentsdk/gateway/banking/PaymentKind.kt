@@ -1,7 +1,7 @@
 package com.guavapay.paymentsdk.gateway.banking
 
 import com.guavapay.paymentsdk.R
-import com.guavapay.paymentsdk.platform.compose.ComposeString
+import com.guavapay.paymentsdk.presentation.platform.ComposeString
 import java.io.Serializable
 import androidx.compose.ui.res.stringResource as string
 

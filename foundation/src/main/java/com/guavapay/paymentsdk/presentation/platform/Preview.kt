@@ -1,4 +1,4 @@
-package com.guavapay.paymentsdk.platform.compose
+package com.guavapay.paymentsdk.presentation.platform
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,6 +9,7 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -24,11 +25,13 @@ import com.guavapay.paymentsdk.gateway.banking.PaymentCardType.CREDIT
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardType.DEBIT
 import com.guavapay.paymentsdk.gateway.banking.PaymentInstruments
 import com.guavapay.paymentsdk.gateway.banking.PaymentMethod.Card
+import com.guavapay.paymentsdk.gateway.launcher.LocalGatewayState
 import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayState
+import java.math.BigDecimal
+import java.util.Currency
+import java.util.Locale
 
-internal object PreviewScope
-
-@Composable internal fun PreviewTheme(content: @Composable context(PreviewScope) () -> Unit) {
+@Composable internal fun PreviewTheme(content: @Composable () -> Unit) {
   val isDarkTheme = isSystemInDarkTheme()
 
   val lightColorScheme = lightColorScheme(primary = Color(0xFF2E7D32))
@@ -39,11 +42,10 @@ internal object PreviewScope
     else -> lightColorScheme
   }
 
-  val typography =
-    Typography(
-      displaySmall = TextStyle(fontWeight = FontWeight.W100, fontSize = 96.sp),
-      labelLarge = TextStyle(fontWeight = FontWeight.W600, fontSize = 14.sp)
-    )
+  val typography = Typography(
+    displaySmall = TextStyle(fontWeight = FontWeight.W100, fontSize = 96.sp),
+    labelLarge = TextStyle(fontWeight = FontWeight.W600, fontSize = 14.sp)
+  )
 
   val shapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp),
@@ -55,15 +57,15 @@ internal object PreviewScope
 
   MaterialTheme(colorScheme = colorScheme, typography = typography, shapes = shapes) {
     Surface(color = MaterialTheme.colorScheme.surface) {
-      with(PreviewScope) {
+      CompositionLocalProvider(LocalGatewayState provides PaymentGatewayState.demo()) {
         content()
       }
     }
   }
 }
 
-context(_: PreviewScope) internal fun PaymentGatewayState.Companion.demo() = PaymentGatewayState(
+private fun PaymentGatewayState.Companion.demo() = PaymentGatewayState(
   merchant = "Demo Store",
   instruments = PaymentInstruments(methods = setOf(Card(networks = setOf(VISA, MASTERCARD, AMEX, DISCOVER, DINERS_CLUB), cardtypes = setOf(CREDIT, DEBIT)))),
-  amount = PaymentAmount(java.math.BigDecimal("20.00"), java.util.Currency.getInstance(java.util.Locale.US))
+  amount = PaymentAmount(BigDecimal("20.00"), Currency.getInstance(Locale.US))
 )

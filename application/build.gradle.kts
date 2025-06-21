@@ -6,7 +6,7 @@ plugins {
 
 android {
   namespace = "com.guavapay.paymentsdk.demo"
-  compileSdk = 35
+  compileSdk = 36
 
   defaultConfig {
     applicationId = "com.guavapay.paymentsdk"
@@ -48,6 +48,7 @@ dependencies {
 
   implementation(libs.androidx.core)
   implementation(libs.androidx.lifecycle.runtime)
+  implementation(libs.androidx.lifecycle.viewmodel)
   implementation(libs.androidx.activity.compose)
 
   implementation(platform(libs.compose.bom))

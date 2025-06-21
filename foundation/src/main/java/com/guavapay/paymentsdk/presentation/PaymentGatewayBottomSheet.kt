@@ -11,12 +11,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
-import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayState
-import com.guavapay.paymentsdk.platform.compose.getDialogWindow
+import com.guavapay.paymentsdk.gateway.launcher.LocalGatewayState
 import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.WINDOW_ANIMATION_DURATION
+import com.guavapay.paymentsdk.presentation.platform.getDialogWindow
 import kotlinx.coroutines.delay
 
-@Composable internal fun PaymentGatewayBottomSheet(state: PaymentGatewayState, result: (PaymentResult) -> Unit) {
+@Composable internal fun PaymentGatewayBottomSheet(result: (PaymentResult) -> Unit) {
+  val state = LocalGatewayState.current
+
   state.decorator.Decorate {
     var isWindowVisible by remember { mutableStateOf(true) }
     var isOverlayLayoutVisible by remember { mutableStateOf(false) }
@@ -53,7 +55,7 @@ import kotlinx.coroutines.delay
           dialogWindow?.setWindowAnimations(-1)
         }
 
-        PaymentGatewayContent(state, isOverlayLayoutVisible, ::close)
+        PaymentGatewayContent(isOverlayLayoutVisible, ::close)
       }
     }
   }
