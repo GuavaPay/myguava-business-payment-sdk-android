@@ -31,7 +31,7 @@ internal fun PaymentGatewayState.toGooglePayRequest(countryCode: String, apiVers
       merchantId = merchant
     ),
     transactionInfo = TransactionInfo(
-      totalPrice = "%.2f".format(((amount.value * 100.toBigDecimal()).longValueExact()) / 100.0),
+      totalPrice = "%.2f".format(((amount.value * 100.toBigDecimal()).longValueExact()) / 100.0), // todo: need to know which divideon mode exactly needed, after that this formatting logic will changed.
       currencyCode = amount.currency.currencyCode,
       countryCode = countryCode
     )
