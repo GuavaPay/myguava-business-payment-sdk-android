@@ -9,16 +9,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.guavapay.paymentsdk.gateway.banking.PaymentMethod
+import androidx.compose.ui.util.fastForEach
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetworks
 
-@Composable internal fun PaymentNetworksIcons(instrument: PaymentMethod.Card, modifier: Modifier = Modifier) {
+@Composable internal fun PaymentNetworksIcons(networks: List<PaymentCardNetworks>, modifier: Modifier = Modifier) {
   FlowRow(
     modifier = modifier,
     horizontalArrangement = Arrangement.spacedBy(16.dp),
     verticalArrangement = Arrangement.spacedBy(8.dp),
     itemVerticalAlignment = Alignment.CenterVertically
   ) {
-    instrument.networks.forEach { network ->
+    networks.fastForEach { network ->
       Image(
         painter = painterResource(id = network.imageres),
         contentDescription = null,

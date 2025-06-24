@@ -59,9 +59,7 @@ interface OrderApi {
   ): Response<Models.ExchangeRateResponse>
 
   @POST("card-range/resolve")
-  suspend fun getCardRangeData(
-    @Body request: Models.CardRangeRequest
-  ): Response<Models.CardRangeResponse?>
+  suspend fun getCardRangeData(@Body request: Models.CardRangeRequest): Response<Models.CardRangeResponse>
 
   @PUT("order/{orderId}/payment")
   suspend fun createPayment(
@@ -184,7 +182,7 @@ interface OrderApi {
 
     @Serializable
     data class CardRangeResponse(
-      @SerialName("cardScheme") val cardScheme: PaymentCardNetworks,
+      @SerialName("cardScheme") val cardScheme: PaymentCardNetworks? = null,
       @SerialName("product") val product: CardProduct? = null
     )
 

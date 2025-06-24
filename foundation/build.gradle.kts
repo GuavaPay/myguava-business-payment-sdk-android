@@ -113,6 +113,7 @@ dependencies {
   implementation(platform(libs.okhttp.bom))
   implementation(libs.okhttp.core)
   implementation(libs.okhttp.logging)
+  implementation(libs.okhttp.sse)
   implementation(libs.retrofit.core)
   implementation(libs.retrofit.serialization)
 

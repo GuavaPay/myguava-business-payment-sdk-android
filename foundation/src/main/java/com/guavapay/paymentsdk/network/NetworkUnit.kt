@@ -5,6 +5,7 @@ import com.guavapay.paymentsdk.logging.d
 import com.guavapay.paymentsdk.logging.i
 import com.guavapay.paymentsdk.network.services.BindingsApi
 import com.guavapay.paymentsdk.network.services.OrderApi
+import com.guavapay.paymentsdk.network.ssevents.SseClient
 import com.guavapay.paymentsdk.platform.manifest.manifestFields
 import kotlinx.serialization.json.Json
 import okhttp3.Cache
@@ -48,6 +49,10 @@ internal class NetworkUnit(private val lib: LibraryUnit) {
     private val baseUrl = lib.context.manifestFields().baseUrl
     val order = retrofit<OrderApi>(baseUrl, clients.authorized)
     val bindings = retrofit<BindingsApi>(baseUrl, clients.authorized)
+  }
+
+  val sse = SSE(); inner class SSE() {
+    val client by lazy { SseClient(clients.authorized) }
   }
 
   private inline fun <reified T> retrofit(

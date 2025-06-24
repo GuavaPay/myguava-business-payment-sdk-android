@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
@@ -25,32 +26,38 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.guavapay.paymentsdk.presentation.components.atomic.CircularProgressIndicator
+import com.guavapay.paymentsdk.presentation.components.compound.TextFieldEndContent.Empty
+import com.guavapay.paymentsdk.presentation.components.compound.TextFieldEndContent.Icon
+import com.guavapay.paymentsdk.presentation.components.compound.TextFieldEndContent.Progress
 import com.guavapay.paymentsdk.presentation.platform.LocalSizesProvider
 import com.guavapay.paymentsdk.presentation.platform.LocalTokensProvider
 
+private enum class TextFieldEndContent { Progress, Icon, Empty }
+
 @Composable internal fun TextFieldCompound(
-  title: String,
+  header: String,
   value: String,
   onValueChange: (String) -> Unit,
-  placeholder: String = "",
-  keyboardType: KeyboardType = KeyboardType.Number,
-  imeAction: ImeAction = ImeAction.Next,
-  onDone: (() -> Unit)? = null,
-  onFocusLost: (() -> Unit)? = null,
-  maxLength: Int? = null,
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
   loading: Boolean = false,
+  readOnly: Boolean = false,
+  placeholder: String = "",
   endIcon: Painter? = null,
   error: String? = null,
-  singleLine: Boolean = false,
   visualTransformation: VisualTransformation = VisualTransformation.None,
-  modifier: Modifier = Modifier
+  keyboardOptions: KeyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+  onDoneAction: (() -> Unit)? = null,
+  singleLine: Boolean = false,
+  maxLength: Int? = null,
+  onFocusLost: (() -> Unit)? = null,
 ) {
   val tokens = LocalTokensProvider.current
   val sizes = LocalSizesProvider.current
 
   Column(modifier = modifier.fillMaxWidth()) {
     Text(
-      text = title,
+      text = header,
       style = MaterialTheme.typography.labelMedium,
       color = MaterialTheme.colorScheme.onSurface,
     )
@@ -67,6 +74,14 @@ import com.guavapay.paymentsdk.presentation.platform.LocalTokensProvider
         }
         onValueChange(filteredValue)
       },
+      modifier = Modifier
+        .fillMaxWidth()
+        .height(sizes.textfield().height)
+        .then(
+          if (onFocusLost != null) {
+            Modifier.onFocusChanged { focusState -> if (!focusState.isFocused) onFocusLost() }
+          } else Modifier
+        ),
       placeholder = {
         Text(
           text = placeholder,
@@ -74,28 +89,30 @@ import com.guavapay.paymentsdk.presentation.platform.LocalTokensProvider
           color = MaterialTheme.colorScheme.onSurfaceVariant
         )
       },
-      singleLine = singleLine,
-      visualTransformation = visualTransformation,
+      enabled = enabled,
+      readOnly = readOnly,
+      textStyle = MaterialTheme.typography.bodyMedium,
       trailingIcon = {
         Crossfade(
           targetState = when {
-            loading -> "loading"
-            endIcon != null -> "icon"
-            else -> "empty"
+            loading -> Progress
+            endIcon != null -> Icon
+            else -> Empty
           },
           animationSpec = tween(300),
-          label = "TextFieldIcon"
+          label = remember(TextFieldEndContent::class.simpleName::toString),
         ) { state ->
           Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier.size(24.dp)
           ) {
-            when (state) { // TODO: Use typed.
-              "loading" -> CircularProgressIndicator(
+            when (state) {
+              Progress -> CircularProgressIndicator(
                 modifier = Modifier.size(20.dp),
                 strokeWidth = 2.dp
               )
-              "icon" -> endIcon?.let { icon ->
+
+              Icon -> endIcon?.let { icon ->
                 Icon(
                   painter = icon,
                   contentDescription = null,
@@ -103,30 +120,23 @@ import com.guavapay.paymentsdk.presentation.platform.LocalTokensProvider
                   tint = Color.Unspecified,
                 )
               }
+
+              Empty -> {}
             }
           }
         }
       },
       isError = error != null,
-      modifier = Modifier
-        .fillMaxWidth()
-        .height(sizes.textfield().height)
-        .then(
-          if (onFocusLost != null) {
-            Modifier.onFocusChanged { focusState ->
-              if (!focusState.isFocused) {
-                onFocusLost()
-              }
-            }
-          } else Modifier
-        ),
-      shape = MaterialTheme.shapes.small,
-      colors = tokens.textfield(),
-      keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
+      visualTransformation = visualTransformation,
+      keyboardOptions = keyboardOptions,
       keyboardActions = KeyboardActions(
-        onDone = if (imeAction == ImeAction.Done && onDone != null) { { onDone() } } else null
+        onDone = if (keyboardOptions.imeAction == ImeAction.Done && onDoneAction != null) {
+          { onDoneAction() }
+        } else null
       ),
-      textStyle = MaterialTheme.typography.bodyMedium
+      singleLine = singleLine,
+      shape = MaterialTheme.shapes.small,
+      colors = tokens.textfield()
     )
 
     error?.let { errorText ->

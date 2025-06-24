@@ -19,8 +19,11 @@
   <string name="initial_newcard_save">Save the card for future payments</string>
   <string name="initial_newcard_name">Card name</string>
   <string name="initial_newcard_name_placeholder">Name your card</string>
-  
+
   <string name="error_unable_to_identify_card">Unable to identify card</string>
   <string name="error_invalid_card_number">Invalid card number</string>
+  <string name="error_invalid_exp_number">Invalid expiration date</string>
+  <string name="error_invalid_cvv">Invalid CVV</string>
+  <string name="error_invalid_card_name">Invalid card name</string>
   <string name="error_payment_network_not_supported">Payment network not supported</string>
 </resources>

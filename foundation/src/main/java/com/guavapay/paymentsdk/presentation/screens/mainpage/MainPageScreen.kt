@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -37,12 +38,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.guavapay.paymentsdk.R
-import com.guavapay.paymentsdk.gateway.banking.PaymentAmount
 import com.guavapay.paymentsdk.gateway.banking.PaymentKind
 import com.guavapay.paymentsdk.gateway.banking.PaymentMethod
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
@@ -58,6 +57,7 @@ import com.guavapay.paymentsdk.presentation.platform.CvcVisualTransformation
 import com.guavapay.paymentsdk.presentation.platform.ExpiryDateVisualTransformation
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
 import com.guavapay.paymentsdk.presentation.platform.ViewModelFactory
+import com.guavapay.paymentsdk.presentation.platform.string
 import com.guavapay.paymentsdk.rememberLibraryUnit
 
 internal object MainPageScreen {
@@ -72,9 +72,9 @@ internal object MainPageScreen {
     LaunchedEffect(vm) {
       vm.effects.collect { effect ->
         when (effect) {
-          is MainPageVM.Effect.PaymentError -> { /* TODO() */
-          }
-
+          is MainPageVM.Effect.RequiredContacts -> { /* Navigate onto ContactScreen */ }
+          is MainPageVM.Effect.AbortDueError -> { /* Navigate to AbortScreen */ }
+          is MainPageVM.Effect.PaymentError -> { /* TODO() */ }
           is MainPageVM.Effect.NavigateToResult -> {
             actions.finish(if (effect.success) PaymentResult.Completed else PaymentResult.Completed /* Mocked until not integrated with BE */)
           }
@@ -103,31 +103,26 @@ internal object MainPageScreen {
 
       Spacer(modifier = Modifier.height(20.dp))
 
-      val googlePayMethod = remember(state.gateway.instruments.methods) { state.gateway.instruments.instrument<PaymentMethod.GooglePay>() }
-      if (googlePayMethod != null) {
-        GooglePayButton(state.gateway, actions.finish)
+      if (state.external.flags.gpay) {
+        val gpay = remember(gs.instruments.methods) { gs.instruments.instrument<PaymentMethod.GooglePay>() }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OrPayByCardDivider(title = stringResource(R.string.initial_or_pay_by_card))
-
-        Spacer(modifier = Modifier.height(16.dp))
+        if (gpay != null) {
+          GooglePayButton(gs, vm.handles::gpay)
+          Spacer(modifier = Modifier.height(16.dp))
+          OrPayByCardDivider(title = stringResource(R.string.initial_or_pay_by_card))
+          Spacer(modifier = Modifier.height(16.dp))
+        }
       }
 
-      val cardInstrument = remember(state.gateway.instruments.methods) { state.gateway.instruments.instrument<PaymentMethod.Card>() }
-      val cardSchemeIcon = com.guavapay.paymentsdk.presentation.platform.remember(state.cardScheme) { it?.imageres }
-
       TextFieldCompound(
-        title = stringResource(R.string.initial_newcard_number),
-        value = state.cardNumber,
-        onValueChange = vm::updateCardNumber,
-        onFocusLost = vm::onCardNumberFocusLost,
+        header = stringResource(R.string.initial_newcard_number),
+        value = state.external.fields.pan,
+        onValueChange = vm.handles::pan,
+        onFocusLost = vm.handles::panFocusLost,
         placeholder = stringResource(R.string.initial_newcard_number_placeholder),
-        keyboardType = KeyboardType.Number,
-        imeAction = ImeAction.Next,
-        loading = state.cardNumberLoading,
-        endIcon = cardSchemeIcon?.let { painterResource(it) },
-        error = state.cardNumberError,
+        loading = state.external.fields.panBusy,
+        endIcon = state.external.fields.panNetwork?.imageres?.let { painterResource(it) },
+        error = state.external.fields.panError?.string(),
         singleLine = true,
         maxLength = 19,
         visualTransformation = CardNumberVisualTransformation()
@@ -137,41 +132,41 @@ internal object MainPageScreen {
 
       CardFieldsGroup(
         state = state,
-        onExpirationDateChange = vm::updateExpirationDate,
-        onExpirationDateFocusLost = vm::onExpirationDateFocusLost,
-        securityCode = state.securityCode,
-        onSecurityCodeChange = vm::updateSecurityCode,
-        maxCvcLength = state.maxCvcLength,
-        saveCardEnabled = state.allowSaveCard,
-        onDone = vm::performPayment
+        onExpirationDateChange = vm.handles::exp,
+        onExpirationDateFocusLost = vm.handles::expFocusLost,
+        securityCode = state.external.fields.cvv,
+        onSecurityCodeChange = vm.handles::cvv,
+        onSecurityCodeFocusLost = vm.handles::cvvFocusLost,
+        maxCvcLength = state.external.fields.cvvLength,
+        saveCardEnabled = state.external.flags.save,
+        onDone = vm.handles::pay
       )
 
       Spacer(modifier = Modifier.height(24.dp))
 
-      if (state.allowSaveCard) {
+      if (state.external.flags.save) {
         SaveCardBlock(
-          checked = state.saveCard,
-          onCheckedChange = vm::updateSaveCard,
-          cardName = state.cardName,
-          onCardNameChange = vm::updateCardName,
-          onDone = vm::performPayment
+          checked = state.external.saving,
+          onCheckedChange = vm.handles::toggleSave,
+          cardName = state.external.fields.cn,
+          onCardNameChange = vm.handles::cn,
+          onCardNameFocusLost = vm.handles::cnFocusLost,
+          onDone = vm.handles::pay
         )
       }
 
       Spacer(modifier = Modifier.height(24.dp))
 
-      if (cardInstrument != null) {
-        PaymentNetworksIcons(instrument = cardInstrument, modifier = Modifier.align(Alignment.CenterHorizontally))
-      }
+      PaymentNetworksIcons(networks = state.external.networks, modifier = Modifier.align(Alignment.CenterHorizontally))
 
       Spacer(modifier = Modifier.height(32.dp))
 
       PayButton(
-        amount = state.gateway.amount,
-        enabled = vm.isPaymentButtonEnabled,
-        isLoading = state.isProcessing,
-        kind = state.gateway.kind,
-        onClick = vm::performPayment
+        amount = state.external.paytext?.string(),
+        enabled = vm.handles.isEligibleToPay,
+        isLoading = state.external.busy,
+        kind = state.external.paykind ?: PaymentKind.Pay,
+        onClick = vm.handles::pay
       )
     }
   }
@@ -206,6 +201,7 @@ internal object MainPageScreen {
     onExpirationDateFocusLost: () -> Unit,
     securityCode: String,
     onSecurityCodeChange: (String) -> Unit,
+    onSecurityCodeFocusLost: () -> Unit,
     maxCvcLength: Int,
     saveCardEnabled: Boolean,
     onDone: (() -> Unit)? = null,
@@ -216,14 +212,12 @@ internal object MainPageScreen {
     ) {
       TextFieldCompound(
         modifier = Modifier.weight(1f),
-        value = state.expirationDate,
+        value = state.external.fields.exp,
         onValueChange = onExpirationDateChange,
         onFocusLost = onExpirationDateFocusLost,
-        title = stringResource(R.string.initial_newcard_expiration),
+        header = stringResource(R.string.initial_newcard_expiration),
         placeholder = stringResource(R.string.initial_newcard_expiration_placeholder),
-        error = state.expirationError,
-        imeAction = ImeAction.Next,
-        keyboardType = KeyboardType.Number,
+        error = state.external.fields.expError?.string(),
         singleLine = true,
         maxLength = 4,
         visualTransformation = ExpiryDateVisualTransformation(),
@@ -231,16 +225,17 @@ internal object MainPageScreen {
 
       TextFieldCompound(
         modifier = Modifier.weight(1f),
-        title = stringResource(R.string.initial_newcard_cvv),
+        header = stringResource(R.string.initial_newcard_cvv),
         value = securityCode,
         onValueChange = onSecurityCodeChange,
+        onFocusLost = onSecurityCodeFocusLost,
         placeholder = stringResource(R.string.initial_newcard_cvv_placeholder),
-        keyboardType = KeyboardType.Number,
-        imeAction = if (saveCardEnabled) ImeAction.Next else ImeAction.Done,
+        error = state.external.fields.cvvError?.string(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = if (saveCardEnabled) ImeAction.Next else ImeAction.Done),
         singleLine = true,
         maxLength = maxCvcLength,
         visualTransformation = CvcVisualTransformation(),
-        onDone = onDone,
+        onDoneAction = onDone,
       )
     }
   }
@@ -250,6 +245,7 @@ internal object MainPageScreen {
     onCheckedChange: (Boolean) -> Unit,
     cardName: String,
     onCardNameChange: (String) -> Unit,
+    onCardNameFocusLost: () -> Unit,
     onDone: (() -> Unit)? = null,
   ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -274,20 +270,20 @@ internal object MainPageScreen {
           Spacer(modifier = Modifier.height(24.dp))
 
           TextFieldCompound(
-            title = stringResource(R.string.initial_newcard_name),
+            header = stringResource(R.string.initial_newcard_name),
             value = cardName,
             onValueChange = onCardNameChange,
             placeholder = stringResource(R.string.initial_newcard_name_placeholder),
-            keyboardType = KeyboardType.Text,
-            imeAction = ImeAction.Done,
-            onDone = onDone
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
+            onFocusLost = onCardNameFocusLost,
+            onDoneAction = onDone
           )
         }
       }
     }
   }
 
-  @Composable private fun PayButton(amount: PaymentAmount, kind: PaymentKind, enabled: Boolean, isLoading: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+  @Composable private fun PayButton(amount: String?, kind: PaymentKind, enabled: Boolean, isLoading: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     PrimaryButton(
       onClick = onClick,
       enabled = enabled,
@@ -300,8 +296,18 @@ internal object MainPageScreen {
         )
       } else {
         val buttonKind = kind.text()
+        val text = remember (amount, kind) {
+          buildString {
+            append(buttonKind)
+            if (amount != null) {
+              append(" ")
+              append(amount)
+            }
+          }
+        }
+
         Text(
-          text = "$buttonKind ${amount.format(Locale.current.platformLocale)}",
+          text = text,
           style = MaterialTheme.typography.labelLarge,
         )
       }
