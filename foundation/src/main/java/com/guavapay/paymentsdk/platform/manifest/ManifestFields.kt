@@ -3,18 +3,16 @@ package com.guavapay.paymentsdk.platform.manifest
 import android.content.Context
 import android.content.pm.PackageManager.GET_META_DATA
 
-data class ManifestFields(val baseUrl: String, val apikey: String)
+data class ManifestFields(val baseUrl: String)
 
 fun Context.manifestFields() = runCatching {
   val ai = packageManager.getApplicationInfo(packageName, GET_META_DATA)
   val metaData = ai.metaData
   val environment = metaData?.getString(META_DATA_ENV) ?: DEFAULT_ENV
   val baseUrl = env2url(environment)
-  val apikey = metaData?.getString(META_DATA_APIKEY) ?: ""
-  ManifestFields(baseUrl = baseUrl, apikey = apikey)
-}.getOrElse { ManifestFields(baseUrl = env2url(DEFAULT_ENV), apikey = "") }
+  ManifestFields(baseUrl = baseUrl)
+}.getOrElse { ManifestFields(baseUrl = env2url(DEFAULT_ENV)) }
 
-private const val META_DATA_APIKEY = "com.guavapay.paymentsdk.apikey"
 private const val META_DATA_ENV = "com.guavapay.paymentsdk.environment"
 private const val DEFAULT_ENV = "prod"
 

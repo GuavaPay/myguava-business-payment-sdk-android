@@ -4,45 +4,36 @@ package com.guavapay.paymentsdk.gateway.banking
 
 import android.app.Activity
 import androidx.activity.result.ActivityResult
-import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity
-import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.EXTRA_PAYMENT_ERROR_CODE
-import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.EXTRA_PAYMENT_ERROR_MESSAGE
-import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.RESULT_COMPLETED
-import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.RESULT_FAILED
-import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Failed.Error
+import androidx.core.content.IntentCompat.getSerializableExtra
+import com.guavapay.paymentsdk.logging.i
+import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.EXTRA_SDK_ERROR_THROWABLE
+import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.EXTRA_SDK_RESULT_CODE
+import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.SDK_RESULT_CANCELED
+import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.SDK_RESULT_COMPLETED
+import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.SDK_RESULT_FAILED
 import java.io.Serializable
 
 sealed interface PaymentResult : Serializable {
-  data object Completed : PaymentResult {
-    private fun readResolve(): Any = Completed
-  }
-
-  data class Failed(val error: Error) : PaymentResult {
-    data class Error(val code: String, val message: String, val details: String? = null) : Serializable
-  }
-
-  data object Canceled : PaymentResult {
-    private fun readResolve(): Any = Canceled
-  }
+  data object Completed : PaymentResult { private fun readResolve(): Any = Completed }
+  data object Canceled : PaymentResult { private fun readResolve(): Any = Canceled }
+  data class Failed(val throwable: Throwable? = null) : PaymentResult
 
   companion object {
     internal fun from(result: ActivityResult): PaymentResult {
-      return if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+      val pr = if (result.resultCode == Activity.RESULT_OK && result.data != null) {
         val intent = result.data ?: error("no result, never must happen")
-        val code = intent.getIntExtra(PaymentGatewayActivity.EXTRA_PAYMENT_RESULT_CODE, PaymentGatewayActivity.RESULT_CANCELED)
+        val code = intent.getIntExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_CANCELED)
 
         when (code) {
-          RESULT_COMPLETED -> Completed
-          RESULT_FAILED -> {
-            val errorCode = intent.getStringExtra(EXTRA_PAYMENT_ERROR_CODE) ?: "UNKNOWN_ERROR"
-            val errorMessage = intent.getStringExtra(EXTRA_PAYMENT_ERROR_MESSAGE) ?: "Unknown error"
-            Failed(Error(errorCode, errorMessage))
-          }
+          SDK_RESULT_COMPLETED -> Completed
+          SDK_RESULT_FAILED -> Failed(getSerializableExtra(intent, EXTRA_SDK_ERROR_THROWABLE, Throwable::class.java))
           else -> Canceled
         }
       } else {
         Canceled
       }
+
+      return pr.also { i("Finishing SDK activity with result: $it") }
     }
   }
 }

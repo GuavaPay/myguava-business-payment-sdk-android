@@ -14,10 +14,11 @@ import kotlin.reflect.KProperty0
 @Composable internal fun rememberLibraryUnit() = remember(LocalContext.current, LibraryUnit::from)
 
 internal class LibraryUnit(val context: Context) {
+  val state by lazy(::LibraryState)
   val coroutine by lazy(::CoroutineUnit)
   val network by lazy(::NetworkUnit)
 
-  private val initialize = listOf(::coroutine, ::network)
+  private val initialize = listOf(::state, ::coroutine, ::network)
   fun initialize(): LibraryUnit {
     i("Starting initialization of library components")
     initialize.forEach(KProperty0<*>::invoke)

@@ -10,81 +10,88 @@ import android.view.WindowManager.LayoutParams.FLAG_SECURE
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.core.content.IntentCompat.getSerializableExtra
+import com.guavapay.paymentsdk.LibraryUnit.Companion.from
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
-import com.guavapay.paymentsdk.gateway.launcher.LocalGatewayState
-import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayState
+import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Canceled
+import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Completed
+import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Failed
+import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayPayload
+import com.guavapay.paymentsdk.logging.i
 import com.guavapay.paymentsdk.platform.function.ℓ
 
 internal class PaymentGatewayActivity : ComponentActivity() {
+  init {
+    i("SDK activity initialization started")
+  }
+
   override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
+    super.onCreate(savedInstanceState).also { i("SDK activity creating started with intent: $intent, instance: $savedInstanceState") }
+    from(this).apply { state.payload = ensurePaymentState() }
     enableSecureFlags()
     enableEdgeToEdge()
-    setContent {
-      CompositionLocalProvider(LocalGatewayState provides (ensurePaymentState() ?: return@setContent)) {
-        PaymentGatewayBottomSheet(::finishWithResult)
-      }
-    }
+    setContent { PaymentGatewayBottomSheet(::finishWithResult) }
   }
 
   override fun onResume() {
-    super.onResume()
+    super.onResume().also { i("SDK activity resuming") }
     enableSecureFlags()
   }
 
   override fun onPause() {
-    super.onPause()
+    super.onPause().also { i("SDK activity pausing") }
     val am = getSystemService(ACTIVITY_SERVICE) as ActivityManager
     am.appTasks.forEach { task -> task.setExcludeFromRecents(true) }
+  }
+
+  override fun onDestroy() {
+    super.onDestroy().also { i("SDK activity destroying") }
   }
 
   private fun enableSecureFlags() = window.setFlags(FLAG_SECURE, FLAG_SECURE)
 
   private fun ensurePaymentState() =
-    getSerializableExtra(intent, EXTRA_PAYMENT_STATE, PaymentGatewayState::class.java) ?: ℓ {
-      finishWithError("INVALID_STATE", "Payment state not provided"); null
+    getSerializableExtra(intent, EXTRA_SDK_GATEWAY_PAYLOAD, PaymentGatewayPayload::class.java) ?: ℓ {
+      finishWithError(NullPointerException("Gateway SDK payload was null when it unexpected")) ; null
     }
 
   private fun finishWithResult(result: PaymentResult) {
+    i("Requested finish SDK activity with result: $result")
     Intent().apply { when (result) {
-        is PaymentResult.Canceled -> putExtra(EXTRA_PAYMENT_RESULT_CODE, RESULT_CANCELED)
-        is PaymentResult.Completed -> putExtra(EXTRA_PAYMENT_RESULT_CODE, RESULT_COMPLETED)
-        is PaymentResult.Failed -> {
-          putExtra(EXTRA_PAYMENT_RESULT_CODE, RESULT_FAILED)
-          putExtra(EXTRA_PAYMENT_ERROR_CODE, result.error.code)
-          putExtra(EXTRA_PAYMENT_ERROR_MESSAGE, result.error.message)
+        is Canceled -> putExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_CANCELED)
+        is Completed -> putExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_COMPLETED)
+        is Failed -> {
+          putExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_FAILED)
+          putExtra(EXTRA_SDK_ERROR_THROWABLE, result.throwable)
         }
     } }.also { setResult(RESULT_OK, it) }
     finishAfterTransition()
   }
 
-  private fun finishWithError(code: String, message: String) {
+  private fun finishWithError(throwable: Throwable? = null) {
+    i("Requested finish SDK activity with error: $throwable")
     Intent().apply {
-      putExtra(EXTRA_PAYMENT_RESULT_CODE, RESULT_FAILED)
-      putExtra(EXTRA_PAYMENT_ERROR_CODE, code)
-      putExtra(EXTRA_PAYMENT_ERROR_MESSAGE, message)
+      putExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_FAILED)
+      putExtra(EXTRA_SDK_ERROR_THROWABLE, throwable)
     }.also { setResult(RESULT_OK, it) }
     finishAfterTransition()
   }
 
   internal companion object {
-    const val EXTRA_PAYMENT_STATE = "payment_state"
-    const val EXTRA_PAYMENT_RESULT_CODE = "payment_result_code"
-    const val EXTRA_PAYMENT_ERROR_CODE = "payment_error_code"
-    const val EXTRA_PAYMENT_ERROR_MESSAGE = "payment_error_message"
+    const val EXTRA_SDK_GATEWAY_PAYLOAD = "sdk_gateway_payload"
+    const val EXTRA_SDK_RESULT_CODE = "sdk_result_code"
+    const val EXTRA_SDK_ERROR_THROWABLE = "sdk_error_throwable"
 
-    const val RESULT_CANCELED = 0
-    const val RESULT_COMPLETED = 1
-    const val RESULT_FAILED = 2
+    const val SDK_RESULT_CANCELED = 0
+    const val SDK_RESULT_COMPLETED = 1
+    const val SDK_RESULT_FAILED = 2
 
     const val WINDOW_ANIMATION_DURATION = 400
 
     val launcher = Launcher(); class Launcher {
-      fun intent(context: Context, state: PaymentGatewayState) =
+      fun intent(context: Context, state: PaymentGatewayPayload) =
         Intent(context, PaymentGatewayActivity::class.java).apply {
-          putExtra(EXTRA_PAYMENT_STATE, state)
+          putExtra(EXTRA_SDK_GATEWAY_PAYLOAD, state)
         }
     }
   }

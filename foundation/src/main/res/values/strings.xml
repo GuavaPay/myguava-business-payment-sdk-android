@@ -26,4 +26,8 @@
   <string name="error_invalid_cvv">Invalid CVV</string>
   <string name="error_invalid_card_name">Invalid card name</string>
   <string name="error_payment_network_not_supported">Payment network not supported</string>
+
+  <string name="abort_title">Can\'t continue flow</string>
+  <string name="abort_description">Please try again later or contact support.</string>
+  <string name="abort_finish">Close</string>
 </resources>

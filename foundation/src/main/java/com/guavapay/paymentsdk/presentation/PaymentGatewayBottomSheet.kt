@@ -11,15 +11,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
-import com.guavapay.paymentsdk.gateway.launcher.LocalGatewayState
 import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.WINDOW_ANIMATION_DURATION
 import com.guavapay.paymentsdk.presentation.platform.getDialogWindow
+import com.guavapay.paymentsdk.rememberLibraryUnit
 import kotlinx.coroutines.delay
 
 @Composable internal fun PaymentGatewayBottomSheet(result: (PaymentResult) -> Unit) {
-  val state = LocalGatewayState.current
+  val lib = rememberLibraryUnit()
 
-  state.decorator.Decorate {
+  lib.state.payload().looknfeel.Decorate {
     var isWindowVisible by remember { mutableStateOf(true) }
     var isOverlayLayoutVisible by remember { mutableStateOf(false) }
     var pendingResult by remember { mutableStateOf<PaymentResult?>(null) }

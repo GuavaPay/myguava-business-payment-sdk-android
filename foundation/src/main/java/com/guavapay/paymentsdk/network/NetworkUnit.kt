@@ -26,21 +26,28 @@ internal class NetworkUnit(private val lib: LibraryUnit) {
   private val dispatcher = Dispatcher(lib.coroutine.executors.common)
   private val cache = Cache(lib.context.cacheDir, 5 * 1024 * 1024 /* 5 MiB */)
 
-  private val apikey = lib.context.manifestFields().apikey
-
   val json = Json(); inner class Json() {
     val unspecified = Json { ignoreUnknownKeys = true }
   }
 
   val clients = Clients(); inner class Clients() {
-    val authorized = client { chain ->
-      val original = chain.request()
-      val request = original.newBuilder()
-        .header("Authorization", "Bearer $apikey")
-        .header("Request-ID", UUID.randomUUID().toString())
+    val apikey get() = lib.state.payload().sessionToken
 
-      chain.proceed(request.build())
+    val interceptors = Interceptors(); inner class Interceptors() {
+      fun authentication() = Interceptor { chain ->
+        val original = chain.request()
+        val request = original.newBuilder()
+          .header("Authorization", "Bearer ${clients.apikey}")
+          .header("Request-ID", UUID.randomUUID().toString())
+
+        chain.proceed(request.build())
+      }
+
+      fun logging() = HttpLoggingInterceptor(::d).apply { setLevel(BODY).also { redactHeader("Authorization") } }
     }
+
+    val authorized = client(interceptors.logging(), interceptors.authentication())
+    val sse = client(interceptors.authentication())
 
     val unspecified = client()
   }
@@ -52,7 +59,7 @@ internal class NetworkUnit(private val lib: LibraryUnit) {
   }
 
   val sse = SSE(); inner class SSE() {
-    val client by lazy { SseClient(clients.authorized) }
+    val client by lazy { SseClient(clients.sse) }
   }
 
   private inline fun <reified T> retrofit(
@@ -66,15 +73,13 @@ internal class NetworkUnit(private val lib: LibraryUnit) {
     .build().create(T::class.java)
     .also { i("${T::class.simpleName} retrofit API has successfully created") }
 
-  private fun client(interceptor: Interceptor? = null): OkHttpClient {
-    val log = HttpLoggingInterceptor(::d).apply { setLevel(BODY).also { redactHeader("Authorization") } }
-    val builder = Builder().dispatcher(dispatcher).cache(cache).timeouts().redirects().addInterceptor(log)
-
-    interceptor?.let(builder::addInterceptor)
+  private fun client(vararg interceptor: Interceptor): OkHttpClient {
+    val builder = Builder().dispatcher(dispatcher).cache(cache).retryOnConnectionFailure(true).timeouts().redirects()
+    interceptor.forEach(builder::addInterceptor)
     val client = builder.build()
     return client
   }
 
-  private fun Builder.timeouts() = connectTimeout(30, SECONDS).callTimeout(30, SECONDS)
+  private fun Builder.timeouts(timeout: Long = 30) = connectTimeout(timeout, SECONDS).callTimeout(timeout, SECONDS).readTimeout(timeout, SECONDS).writeTimeout(timeout, SECONDS)
   private fun Builder.redirects() = followRedirects(false).followSslRedirects(false)
 }

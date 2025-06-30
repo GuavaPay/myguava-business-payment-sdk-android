@@ -1,7 +1,7 @@
 package com.guavapay.paymentsdk.network.services
 
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetworks
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardType
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.Response
@@ -182,8 +182,8 @@ interface OrderApi {
 
     @Serializable
     data class CardRangeResponse(
-      @SerialName("cardScheme") val cardScheme: PaymentCardNetworks? = null,
-      @SerialName("product") val product: CardProduct? = null
+        @SerialName("cardScheme") val cardScheme: PaymentCardNetwork? = null,
+        @SerialName("product") val product: CardProduct? = null
     )
 
     @Serializable
@@ -193,8 +193,8 @@ interface OrderApi {
 
     @Serializable
     data class CardResolveResponse(
-      @SerialName("cardScheme") val cardScheme: PaymentCardNetworks,
-      @SerialName("paymentLockReason") val paymentLockReason: String? = null
+        @SerialName("cardScheme") val cardScheme: PaymentCardNetwork,
+        @SerialName("paymentLockReason") val paymentLockReason: String? = null
     )
 
     @Serializable
@@ -278,8 +278,9 @@ interface OrderApi {
       @SerialName("expirationDate") val expirationDate: String,
       @SerialName("sessionToken") val sessionToken: String,
       @SerialName("availablePaymentMethods") val availablePaymentMethods: List<String>,
-      @SerialName("availableCardSchemes") val availableCardSchemes: List<String>,
-      @SerialName("availableCardProductCategories") val availableCardProductCategories: List<String>,
+      @SerialName("availableCardSchemes") val availableCardSchemes: List<PaymentCardNetwork>,
+      @SerialName("availableCardProductCategories") val availableCardProductCategories: List<PaymentCardCategory>,
+      @SerialName("availablePaymentCurrencies") val availablePaymentCurrencies: List<String> = emptyList(),
       @SerialName("redirectUrl") val redirectUrl: String,
       @SerialName("purpose") val purpose: String,
       @SerialName("referenceNumber") val referenceNumber: String? = null,
@@ -288,7 +289,8 @@ interface OrderApi {
       @SerialName("refundedAmount") val refundedAmount: ExtendedAmount? = null,
       @SerialName("recurrence") val recurrence: Recurrence? = null,
       @SerialName("description") val description: OrderDescription? = null,
-      @SerialName("payer") val payer: Payer? = null
+      @SerialName("payer") val payer: Payer? = null,
+      @SerialName("creationDate") val creationDate: String? = null
     )
 
     @Serializable
@@ -335,7 +337,9 @@ interface OrderApi {
       @SerialName("lastName") val lastName: String? = null,
       @SerialName("dateOfBirth") val dateOfBirth: String? = null,
       @SerialName("contactEmail") val contactEmail: String? = null,
+      @SerialName("maskedContactEmail") val maskedContactEmail: String? = null,
       @SerialName("contactPhone") val contactPhone: Phone? = null,
+      @SerialName("maskedContactPhone") val maskedContactPhone: String? = null,
       @SerialName("address") val address: Address? = null,
       @SerialName("inputMode") val inputMode: String? = null
     )
@@ -469,9 +473,9 @@ interface OrderApi {
 
     @Serializable
     data class CardProduct(
-      @SerialName("id") val id: String,
+      @SerialName("id") val id: String? = null,
       @SerialName("brand") val brand: String,
-      @SerialName("category") val category: PaymentCardType
+      @SerialName("category") val category: PaymentCardCategory
     )
 
     @Serializable

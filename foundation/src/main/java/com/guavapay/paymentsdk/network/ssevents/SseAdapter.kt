@@ -5,6 +5,8 @@ import kotlinx.coroutines.channels.ProducerScope
 import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
 import okhttp3.Response
+import okhttp3.internal.http2.StreamResetException
+import java.net.SocketTimeoutException
 
 internal class SseAdapter(private val producer: ProducerScope<SseEvent>) : EventSourceListener() {
   override fun onOpen(eventSource: EventSource, response: Response) {
@@ -19,11 +21,17 @@ internal class SseAdapter(private val producer: ProducerScope<SseEvent>) : Event
 
   override fun onClosed(eventSource: EventSource) {
     d("SSE event source closed")
+    producer.trySend(SseEvent.Closed)
     producer.channel.close()
   }
 
   override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
-    d("SSE event source failed: $t, $response")
-    producer.channel.close(t)
+    if (t is StreamResetException || t is SocketTimeoutException) {
+      onClosed(eventSource)
+    } else {
+      d("SSE event source failed: $t, $response")
+      producer.trySend(SseEvent.Failure(response?.code, response?.message, t))
+      producer.channel.close(t)
+    }
   }
 }

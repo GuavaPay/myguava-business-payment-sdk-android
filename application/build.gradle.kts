@@ -2,6 +2,7 @@ plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.android)
   alias(libs.plugins.kotlin.compose)
+  alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -58,4 +59,10 @@ dependencies {
 
   implementation(libs.material)
   implementation(libs.androidx.material3.android)
+
+  implementation(platform(libs.okhttp.bom))
+  implementation(libs.okhttp.core)
+  implementation(libs.okhttp.logging)
+
+  implementation(libs.kotlinx.serialization)
 }

@@ -6,25 +6,36 @@ import com.guavapay.paymentsdk.integrations.IntegrationException.NoResponseError
 import com.guavapay.paymentsdk.integrations.IntegrationException.ServerError
 import com.guavapay.paymentsdk.integrations.IntegrationException.TimeoutError
 import com.guavapay.paymentsdk.integrations.IntegrationException.UnqualifiedError
-import com.guavapay.paymentsdk.platform.coroutines.CompositeExceptionHandler
-import com.guavapay.paymentsdk.platform.coroutines.ExceptionHandler
 import com.guavapay.paymentsdk.platform.coroutines.timeouting
 import kotlinx.coroutines.withContext
 import retrofit2.Response
+import com.guavapay.paymentsdk.logging.e
+import com.guavapay.paymentsdk.logging.w
+import com.guavapay.paymentsdk.logging.d
 
-internal suspend inline fun <T> RunIntegration(lib: LibraryUnit, timeoutMs: Long, crossinline op: suspend () -> Response<T>): T {
-  return withContext(
-      lib.coroutine.dispatchers.common +
-      lib.coroutine.elements.named +
-      CompositeExceptionHandler(lib.coroutine.handlers.logcat, lib.coroutine.handlers.metrica, ExceptionHandler { e -> throw e })
+internal suspend inline fun <reified T> RunIntegration(lib: LibraryUnit, crossinline op: suspend () -> Response<T>): T = RunIntegration(lib, 4000, op)
+
+internal suspend inline fun <reified T> RunIntegration(lib: LibraryUnit, timeoutMs: Long, crossinline op: suspend () -> Response<T>): T {
+  return withContext(lib.coroutine.dispatchers.common + lib.coroutine.elements.named) {
+    d("Starting integration operation for gathering ${T::class.simpleName}")
+
+    timeouting<T, TimeoutError>(
+      timeoutMs = timeoutMs,
+      factory = { cause ->
+        e("Integration operation for gathering ${T::class.simpleName} timed out", cause)
+        TimeoutError("request timed out", cause)
+      }
     ) {
-      timeouting<T, TimeoutError>(
-        timeoutMs = timeoutMs,
-        factory = { cause -> TimeoutError("request timed out", cause) }
-      ) {
-        retry(3) { map(op()) }
+      retry(3) {
+        runCatching {
+          map(op())
+        }.onFailure {
+          lib.coroutine.handlers.logcat.handler(coroutineContext, it)
+          lib.coroutine.handlers.metrica.handler(coroutineContext, it)
+        }.getOrThrow()
       }
     }
+  }
 }
 
 internal sealed class IntegrationException(message: String, cause: Throwable? = null) : Exception(message, cause) {
@@ -42,7 +53,7 @@ private fun <T> map(response: Response<T>) = when {
   else -> throw UnqualifiedError("returned unexpected HTTP ${response.code()}: ${response.message()}")
 }
 
-private suspend inline fun <T> retry(attempts: Int, crossinline operation: suspend (attempt: Int) -> T): T {
+private suspend inline fun <reified T> retry(attempts: Int, crossinline operation: suspend (attempt: Int) -> T): T {
   var record: Throwable? = null
 
   repeat(attempts) { attempt ->
@@ -52,7 +63,10 @@ private suspend inline fun <T> retry(attempts: Int, crossinline operation: suspe
       record = e
 
       if (attempt == attempts - 1 || e !is ServerError) {
+        e("An error occurred while executing the integration operation for gathering ${T::class.simpleName}", e)
         throw e
+      } else {
+        w("An server error occurred while executing the integration operation for gathering ${T::class.simpleName} (attempt: $attempt), retrying...")
       }
     }
   }

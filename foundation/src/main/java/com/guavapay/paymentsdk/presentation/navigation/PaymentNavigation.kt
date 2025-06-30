@@ -1,3 +1,5 @@
+@file:Suppress("NestedLambdaShadowedImplicitParameter")
+
 package com.guavapay.paymentsdk.presentation.navigation
 
 import androidx.compose.animation.core.tween
@@ -7,28 +9,37 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entry
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberSavedStateNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import androidx.navigation3.ui.rememberSceneSetupNavEntryDecorator
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
+import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Failed
 import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.WINDOW_ANIMATION_DURATION
-import com.guavapay.paymentsdk.presentation.screens.mainpage.MainPageScreen
+import com.guavapay.paymentsdk.presentation.screens.abort.AbortScreen
+import com.guavapay.paymentsdk.presentation.screens.mainpage.MainScreen
 
 internal object Navigation {
   data class Actions(val finish: (PaymentResult) -> Unit)
 
   @Composable operator fun invoke(initial: Route = Route.HomeRoute, actions: Actions) {
-    val backStack = remember { mutableStateListOf(initial) }
+    val nav = rememberNavBackStack(initial)
 
     NavDisplay(
-      backStack = backStack,
-      onBack = { backStack.removeLastOrNull() },
+      backStack = nav,
+      entryDecorators = listOf(
+        rememberSceneSetupNavEntryDecorator(),
+        rememberSavedStateNavEntryDecorator(),
+        rememberViewModelStoreNavEntryDecorator()
+      ),
+      onBack = { nav.removeLastOrNull() },
       modifier = Modifier,
       entryProvider = entryProvider {
-        entry<Route.HomeRoute> { MainPageScreen(actions = MainPageScreen.Actions(finish = actions.finish)) }
+        entry<Route.HomeRoute> { MainScreen(nav, it, actions = MainScreen.Actions(finish = { actions.finish(it) })) }
+        entry<Route.AbortRoute> { AbortScreen(nav, it, actions = AbortScreen.Actions(finish = { actions.finish(Failed(it)) })) }
       },
       transitionSpec = {
         slideInHorizontally(
