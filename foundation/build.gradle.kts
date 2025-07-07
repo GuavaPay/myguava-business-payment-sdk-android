@@ -24,6 +24,10 @@ android {
     res.srcDirs("src/main/res")
   }
 
+  lint {
+    disable += "EnsureInitializerMetadata"
+  }
+
   buildTypes {
     release {
       isMinifyEnabled = true
@@ -110,6 +114,8 @@ composeCompiler {
 }
 
 dependencies {
+  implementation(libs.myguava.xds2.android) { isChanging = true }
+
   implementation(platform(libs.okhttp.bom))
   implementation(libs.okhttp.core)
   implementation(libs.okhttp.logging)
