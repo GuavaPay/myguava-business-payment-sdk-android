@@ -14,7 +14,7 @@
     <meta-data
       android:name="com.google.android.gms.wallet.api.enabled"
       android:value="true"/>
-    
+
     <provider
       android:name="androidx.startup.InitializationProvider"
       android:authorities="${applicationId}.androidx-startup"
