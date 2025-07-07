@@ -69,7 +69,7 @@ import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
           .heightIn(max = LocalWindowInfo.current.containerSize.height.dp * 0.9f)
           .windowInsetsPadding(WindowInsets.ime)
           .shadow(0.dp)
-          .clip(MaterialTheme.shapes.extraLarge)
+          .clip(MaterialTheme.shapes.extraLarge.copy(bottomStart = CornerSize(0), bottomEnd = CornerSize(0)))
           .animateContentSize(animationSpec = tween(durationMillis = WINDOW_ANIMATION_DURATION)),
         colors = LocalTokensProvider.current.card(),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
