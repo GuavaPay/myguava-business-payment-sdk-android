@@ -28,10 +28,10 @@ sealed interface PaymentResult : Serializable {
   data class Payment(val id: String?, val date: String?, val exchangeRate: Double?, val amount: ExtendedAmount?, val result: TransactionResult?, val rrn: String?, val authCode: String?, val reversal: Reversal?) : Serializable
 
   companion object {
-    private fun OrderApi.Models.ExtendedAmount.toResult() = ExtendedAmount(baseUnits = baseUnits, currency = currency, minorSubunits = minorSubunits, localized = localized)
-    private fun OrderApi.Models.TransactionResult.toResult() = TransactionResult(code = code, message = message)
-    private fun OrderApi.Models.Reversal.toResult() = Reversal(result = result?.toResult(), reason = reason)
-    private fun OrderApi.Models.Payment.toResult() = Payment(id = id, date = date, exchangeRate = exchangeRate, amount = amount?.toResult(), result = result?.toResult(), rrn = rrn, authCode = authCode, reversal = reversal?.toResult())
+    internal fun OrderApi.Models.ExtendedAmount.toResult() = ExtendedAmount(baseUnits = baseUnits, currency = currency, minorSubunits = minorSubunits, localized = localized)
+    internal fun OrderApi.Models.TransactionResult.toResult() = TransactionResult(code = code, message = message)
+    internal fun OrderApi.Models.Reversal.toResult() = Reversal(result = result?.toResult(), reason = reason)
+    internal fun OrderApi.Models.Payment.toResult() = Payment(id = id, date = date, exchangeRate = exchangeRate, amount = amount?.toResult(), result = result?.toResult(), rrn = rrn, authCode = authCode, reversal = reversal?.toResult())
 
     internal fun from(result: ActivityResult): PaymentResult {
       val pr = if (result.resultCode == Activity.RESULT_OK && result.data != null) {
