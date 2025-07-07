@@ -7,22 +7,21 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.intl.Locale
-import com.guavapay.paymentsdk.gateway.banking.PaymentMethod
-import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayState
+import com.guavapay.paymentsdk.network.services.OrderApi.Models.GooglePayContext
+import com.guavapay.paymentsdk.network.services.OrderApi.Models.Order
 
-@Composable internal fun rememberGPayOrchestrator(state: PaymentGatewayState): GPayOrchestrator {
+@Composable internal fun rememberGPayOrchestrator(order: Order, gpayctx: GooglePayContext): GPayOrchestrator {
   val context = LocalContext.current
-  val orchestrator = remember(context, state) {
-    val googlePay = state.instruments.instrument<PaymentMethod.GooglePay>()
-    val locale = googlePay?.locale ?: Locale.current.platformLocale
-    GPayOrchestrator(context, state, locale)
+  val orchestrator = remember(context, order, gpayctx) {
+    val locale = Locale.current.platformLocale
+    GPayOrchestrator(context, order, gpayctx, locale)
   }
 
   val launcher = rememberLauncherForActivityResult(StartIntentSenderForResult(), orchestrator::onActivityResult)
 
   LaunchedEffect(orchestrator, launcher) {
     orchestrator.setLauncher(launcher)
-    orchestrator.rediness()
+    orchestrator.initialize()
   }
 
   return orchestrator
