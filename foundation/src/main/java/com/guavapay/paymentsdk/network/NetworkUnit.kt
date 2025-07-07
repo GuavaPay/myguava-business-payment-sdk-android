@@ -3,7 +3,6 @@ package com.guavapay.paymentsdk.network
 import com.guavapay.paymentsdk.LibraryUnit
 import com.guavapay.paymentsdk.logging.d
 import com.guavapay.paymentsdk.logging.i
-import com.guavapay.paymentsdk.network.services.BindingsApi
 import com.guavapay.paymentsdk.network.services.OrderApi
 import com.guavapay.paymentsdk.network.ssevents.SseClient
 import com.guavapay.paymentsdk.platform.manifest.manifestFields
@@ -21,13 +20,18 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.UUID
 import java.util.concurrent.TimeUnit.SECONDS
+import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit
+import com.guavapay.paymentsdk.platform.function.lazy
 
 internal class NetworkUnit(private val lib: LibraryUnit) {
   private val dispatcher = Dispatcher(lib.coroutine.executors.common)
   private val cache = Cache(lib.context.cacheDir, 5 * 1024 * 1024 /* 5 MiB */)
 
   val json = Json(); inner class Json() {
-    val unspecified = Json { ignoreUnknownKeys = true }
+    val unspecified = Json {
+      ignoreUnknownKeys = true
+      encodeDefaults = true
+    }
   }
 
   val clients = Clients(); inner class Clients() {
@@ -46,16 +50,22 @@ internal class NetworkUnit(private val lib: LibraryUnit) {
       fun logging() = HttpLoggingInterceptor(::d).apply { setLevel(BODY).also { redactHeader("Authorization") } }
     }
 
-    val authorized = client(interceptors.logging(), interceptors.authentication())
+    val authorized = client(interceptors.authentication(), interceptors.logging())
     val sse = client(interceptors.authentication())
 
     val unspecified = client()
   }
 
   val services = Services(); inner class Services() {
-    private val baseUrl = lib.context.manifestFields().baseUrl
-    val order = retrofit<OrderApi>(baseUrl, clients.authorized)
-    val bindings = retrofit<BindingsApi>(baseUrl, clients.authorized)
+    private val baseUrl by lazy { when (lib.state.payload().circuit) {
+      PaymentCircuit.Development -> "https://cardium-cpg-dev.guavapay.com"
+      PaymentCircuit.Sandbox -> "https://sandbox-pgw.myguava.com"
+      PaymentCircuit.Production -> "https://api-pgw.myguava.com"
+      null -> lib.context.manifestFields().baseUrl
+    } }
+
+    val order by lazy { retrofit<OrderApi>(baseUrl, clients.authorized) }
+    /*val bindings = retrofit<BindingsApi>(baseUrl, clients.authorized)*/
   }
 
   val sse = SSE(); inner class SSE() {
