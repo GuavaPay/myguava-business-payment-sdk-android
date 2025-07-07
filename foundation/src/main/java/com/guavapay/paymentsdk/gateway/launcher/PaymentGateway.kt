@@ -27,7 +27,7 @@ private var pendingContinuation: Continuation<PaymentResult>? = null
 
 @Stable open class PaymentGateway internal constructor() : Serializable {
   open suspend fun start(): PaymentResult = suspendCancellableCoroutine { continuation ->
-    continuation.resume(PaymentResult.Completed)
+    continuation.resume(PaymentResult.Completed())
   }
 
   companion object {
