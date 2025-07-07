@@ -1,21 +1,37 @@
 package com.guavapay.paymentsdk.gateway.vendors.googlepay
 
-import android.app.Activity
+import android.app.Activity.RESULT_CANCELED
+import android.app.Activity.RESULT_OK
 import android.content.Context
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import com.google.android.gms.common.api.ResolvableApiException
-import com.google.android.gms.wallet.AutoResolveHelper
+import com.google.android.gms.wallet.AutoResolveHelper.RESULT_ERROR
+import com.google.android.gms.wallet.AutoResolveHelper.getStatusFromIntent
 import com.google.android.gms.wallet.IsReadyToPayRequest
-import com.google.android.gms.wallet.PaymentData
+import com.google.android.gms.wallet.PaymentData.getFromIntent
 import com.google.android.gms.wallet.PaymentDataRequest
+import com.google.android.gms.wallet.PaymentsClient
 import com.google.android.gms.wallet.Wallet
 import com.google.android.gms.wallet.Wallet.WalletOptions
-import com.guavapay.paymentsdk.gateway.banking.PaymentMethod
-import com.guavapay.paymentsdk.gateway.banking.PaymentResult
-import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Failed.Error
-import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayState
+import com.guavapay.paymentsdk.LibraryUnit
+import com.guavapay.paymentsdk.gateway.banking.GatewayException.GooglePayException.GooglePayApiException
+import com.guavapay.paymentsdk.gateway.banking.GatewayException.GooglePayException.GooglePayNoPaymentDataException
+import com.guavapay.paymentsdk.gateway.banking.GatewayException.GooglePayException.GooglePayNotInitializedException
+import com.guavapay.paymentsdk.gateway.banking.GatewayException.GooglePayException.GooglePayNotReadyException
+import com.guavapay.paymentsdk.gateway.banking.GatewayException.GooglePayException.GooglePayUnknownException
+import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit.Development
+import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit.Production
+import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit.Sandbox
+import com.guavapay.paymentsdk.gateway.vendors.googlepay.GPayEnvironment.PRODUCTION
+import com.guavapay.paymentsdk.gateway.vendors.googlepay.GPayEnvironment.TEST
+import com.guavapay.paymentsdk.gateway.vendors.googlepay.GPayResult.Canceled
+import com.guavapay.paymentsdk.gateway.vendors.googlepay.GPayResult.Failed
+import com.guavapay.paymentsdk.gateway.vendors.googlepay.GPayResult.Success
+import com.guavapay.paymentsdk.network.services.OrderApi.Models.GooglePayContext
+import com.guavapay.paymentsdk.network.services.OrderApi.Models.Order
+import com.guavapay.paymentsdk.platform.manifest.manifestFields
 import com.guavapay.paymentsdk.platform.threading.await
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,22 +40,23 @@ import java.util.Locale
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 
-internal class GPayOrchestrator(context: Context, private val state: PaymentGatewayState, private val locale: Locale) {
-  private val gpay = state.instruments.instrument<PaymentMethod.GooglePay>() ?: error("GooglePay instrument missing")
-  private val client = Wallet.getPaymentsClient(context, WalletOptions.Builder().setEnvironment(gpay.environment.qualifier).build())
-
+internal class GPayOrchestrator(private val context: Context, private val order: Order, private val gpayctx: GooglePayContext, private val locale: Locale) {
   private val _isProcessing = MutableStateFlow(false)
   val isProcessing: StateFlow<Boolean> get() = _isProcessing
 
   private val _isReady = MutableStateFlow(false)
   val isReady: StateFlow<Boolean> get() = _isReady
 
-  private var launcher: ActivityResultLauncher<IntentSenderRequest>? = null
-  private var pendingContinuation: Continuation<PaymentResult>? = null
+  private val _isContextReady = MutableStateFlow(false)
+  val isContextReady: StateFlow<Boolean> get() = _isContextReady
 
-  fun setLauncher(l: ActivityResultLauncher<IntentSenderRequest>) {
-    launcher = l
-  }
+  private var launcher: ActivityResultLauncher<IntentSenderRequest>? = null
+  private var pendingContinuation: Continuation<GPayResult>? = null
+  private var paymentsClient: PaymentsClient? = null
+
+  fun setLauncher(l: ActivityResultLauncher<IntentSenderRequest>) { launcher = l }
+
+  val buttonPayload get() = buildButtonAllowedPaymentMethodsJson(gpayctx)
 
   fun onActivityResult(result: ActivityResult) {
     val cont = pendingContinuation ?: return
@@ -48,94 +65,120 @@ internal class GPayOrchestrator(context: Context, private val state: PaymentGate
 
     cont.resume(
       when (result.resultCode) {
-        Activity.RESULT_OK -> {
+        RESULT_OK -> {
           result.data?.let { intent ->
-            PaymentData.getFromIntent(intent)?.let { paymentData ->
-              PaymentResult.Completed
+            getFromIntent(intent)?.let { paymentData ->
+              val paymentDataJson = paymentData.toJson()
+              Success(paymentDataJson)
             }
-          } ?: PaymentResult.Failed(Error("", "can't process googlepay", "no payment data")) // TODO: After integration with common payment method will real error.
+          } ?: Failed(GooglePayNoPaymentDataException())
         }
-        Activity.RESULT_CANCELED -> PaymentResult.Canceled
-        AutoResolveHelper.RESULT_ERROR -> {
-          val status = AutoResolveHelper.getStatusFromIntent(result.data)
-          PaymentResult.Failed(Error("", "can't process googlepay", status?.statusMessage ?: "unknown error")) // TODO: After integration with common payment method will real error.
+        RESULT_ERROR -> {
+          val status = getStatusFromIntent(result.data)
+          Failed(GooglePayApiException(status?.statusCode, status?.statusMessage.toString()))
         }
-        else -> PaymentResult.Failed(Error("", "can't process googlepay", "unknown result")) // TODO: After integration with common payment method will real error.
+        RESULT_CANCELED -> Canceled
+        else -> Failed(GooglePayUnknownException("Unknown result code: ${result.resultCode}"))
       }
     )
   }
 
-  suspend fun rediness() {
-    val ready = client
-      .isReadyToPay(IsReadyToPayRequest.fromJson(state.toGoogleIsReadyRequest()))
-      .await()
-      .result == true
-    _isReady.value = ready
+  suspend fun initialize() {
+    try {
+      _isContextReady.value = true
+      val environment = determineEnvironment()
+      paymentsClient = Wallet.getPaymentsClient(context, WalletOptions.Builder().setEnvironment(environment.qualifier).build())
+      checkGooglePayReadiness()
+    } catch (e: Exception) {
+      _isReady.value = false
+      _isContextReady.value = false
+      throw e
+    }
   }
 
-  suspend fun start(): PaymentResult = suspendCancellableCoroutine { cont ->
+  suspend fun start() = suspendCancellableCoroutine { cont ->
     if (!_isReady.value) {
-      cont.resume(PaymentResult.Failed(Error("", "can't process googlepay", "google pay not ready"))) // TODO: After integration with common payment method will real error.
+      cont.resume(Failed(GooglePayNotReadyException("Google Pay is not ready")))
       return@suspendCancellableCoroutine
     }
 
-    val currentLauncher = launcher
-    if (currentLauncher == null) {
-      cont.resume(PaymentResult.Failed(Error("", "can't process googlepay", "launcher not set"))) // TODO: After integration with common payment method will real error.
+    val client = paymentsClient
+    if (client == null) {
+      cont.resume(Failed(GooglePayNotInitializedException("Google Pay client not initialized")))
       return@suspendCancellableCoroutine
     }
 
-    if (_isProcessing.value) {
-      cont.resume(PaymentResult.Failed(Error("", "can't process googlepay", "already processing"))) // TODO: After integration with common payment method will real error.
+    val launcher = launcher
+    if (launcher == null) {
+      cont.resume(Failed(GooglePayNotInitializedException("Activity launcher not set")))
       return@suspendCancellableCoroutine
     }
-
-    _isProcessing.value = true
-    pendingContinuation = cont
 
     try {
-      val countryCode = locale.country
-      val paymentDataRequestJson = state.toGooglePayRequest(countryCode)
-      val request = PaymentDataRequest.fromJson(paymentDataRequestJson)
+      _isProcessing.value = true
+      pendingContinuation = cont
 
-      client.loadPaymentData(request)
-        .addOnCompleteListener { task ->
-          if (task.isSuccessful) {
-            task.result?.let { paymentData ->
-              _isProcessing.value = false
-              val cont = pendingContinuation
-              pendingContinuation = null
-              cont?.resume(PaymentResult.Completed)
-            }
-          } else {
-            val exception = task.exception
-            if (exception is ResolvableApiException) {
-              try {
-                val intentSenderRequest = IntentSenderRequest.Builder(exception.resolution).build()
-                currentLauncher.launch(intentSenderRequest)
-              } catch (e: Exception) {
-                _isProcessing.value = false
-                val cont = pendingContinuation
-                pendingContinuation = null
-                cont?.resume(PaymentResult.Failed(Error("", "can't process googlepay", "failed to start: ${e.message}"))) // TODO: After integration with common payment method will real error.
-              }
-            } else {
-              _isProcessing.value = false
-              val cont = pendingContinuation
-              pendingContinuation = null
-              cont?.resume(PaymentResult.Failed(Error("", "can't process googlepay", "payment failed: ${exception?.message}"))) // TODO: After integration with common payment method will real error.
-            }
-          }
+      val paymentDataJson = buildPaymentDataRequestJson(
+        context = gpayctx,
+        order = order,
+        locale = locale
+      )
+
+      val request = PaymentDataRequest.fromJson(paymentDataJson)
+      val task = client.loadPaymentData(request)
+
+      task.addOnCompleteListener { completedTask ->
+        if (completedTask.isSuccessful) {
+          return@addOnCompleteListener
         }
-    } catch (e: Exception) {
-      _isProcessing.value = false
-      pendingContinuation = null
-      cont.resume(PaymentResult.Failed(Error("", "can't process googlepay", "exception: ${e.message}"))) // TODO: After integration with common payment method will real error.
-    }
 
-    cont.invokeOnCancellation {
-      _isProcessing.value = false
+        val exception = completedTask.exception
+        if (exception is ResolvableApiException) {
+          val intentSenderRequest = IntentSenderRequest.Builder(exception.resolution).build()
+          launcher.launch(intentSenderRequest)
+        } else {
+          pendingContinuation?.resume(Failed(exception ?: GooglePayUnknownException("Unknown Google Pay error")))
+          pendingContinuation = null
+          _isProcessing.value = false
+        }
+      }
+    } catch (e: Exception) {
       pendingContinuation = null
+      _isProcessing.value = false
+      cont.resume(Failed(e))
+    }
+  }
+
+  private fun determineEnvironment(): GPayEnvironment {
+    val circuit = LibraryUnit.from(context).state.payload().circuit
+    return when (circuit) {
+      Production -> PRODUCTION
+      Sandbox -> TEST
+      Development -> TEST
+      null -> {
+        val baseUrl = context.manifestFields().baseUrl
+        when (baseUrl) {
+          "https://api-pgw.myguava.com" -> PRODUCTION
+          else -> TEST
+        }
+      }
+    }
+  }
+
+  private suspend fun checkGooglePayReadiness() {
+    val client = paymentsClient ?: return
+
+    try {
+      val isReadyToPayJson = buildIsReadyToPayJson(gpayctx)
+      val request = IsReadyToPayRequest.fromJson(isReadyToPayJson)
+
+      val task = client.isReadyToPay(request).await()
+      val isReady = task.result ?: false
+
+      _isReady.value = isReady
+    } catch (e: Exception) {
+      _isReady.value = false
+      throw e
     }
   }
 }
