@@ -214,6 +214,7 @@ interface OrderApi {
       @SerialName("paymentMethod") val paymentMethod: PaymentMethod? = null,
       @SerialName("deviceData") val deviceData: DeviceData? = null,
       @SerialName("bindingCreationIsNeeded") val bindingCreationIsNeeded: Boolean? = null,
+      @SerialName("bindingName") val bindingName: String? = null,
       @SerialName("exchange") val exchange: Exchange? = null,
       @SerialName("payer") val payer: Payer? = null,
       @SerialName("challengeWindowSize") val challengeWindowSize: String? = null,
@@ -247,7 +248,7 @@ interface OrderApi {
 
     @Serializable
     data class SubsequentPaymentResponse(
-      @SerialName("result") val result: TransactionResult
+      @SerialName("result") val result: TransactionResult?
     )
 
     @Serializable
@@ -339,7 +340,7 @@ interface OrderApi {
       @SerialName("contactEmail") val contactEmail: String? = null,
       @SerialName("maskedContactEmail") val maskedContactEmail: String? = null,
       @SerialName("contactPhone") val contactPhone: Phone? = null,
-      @SerialName("maskedContactPhone") val maskedContactPhone: String? = null,
+      @SerialName("maskedContactPhone") val maskedContactPhone: MaskedPhone? = null,
       @SerialName("address") val address: Address? = null,
       @SerialName("inputMode") val inputMode: String? = null
     )
@@ -350,6 +351,13 @@ interface OrderApi {
       @SerialName("nationalNumber") val nationalNumber: String? = null,
       @SerialName("country") val country: String? = null,
       @SerialName("fullNumber") val fullNumber: String? = null
+    )
+
+    @Serializable
+    data class MaskedPhone(
+      @SerialName("countryCode") val countryCode: String? = null,
+      @SerialName("nationalNumber") val nationalNumber: String? = null,
+      @SerialName("formatted") val formatted: String? = null
     )
 
     @Serializable
@@ -370,14 +378,11 @@ interface OrderApi {
       @SerialName("expiryDate") val expiryDate: String? = null,
       @SerialName("cardholderName") val cardholderName: String? = null,
       @SerialName("bindingId") val bindingId: String? = null,
-      @SerialName("payment") val payment: GooglePaymentData? = null,
-      @SerialName("paymentData") val paymentData: GooglePaymentData? = null
+      @SerialName("payment") val payment: kotlinx.serialization.json.JsonElement? = null,
+      @SerialName("paymentData") val paymentData: kotlinx.serialization.json.JsonElement? = null
     )
 
-    @Serializable
-    data class GooglePaymentData(
-      @SerialName("paymentMethodData") val paymentMethodData: Map<String, String>? = null
-    )
+
 
     @Serializable
     data class DeviceData(
@@ -474,7 +479,7 @@ interface OrderApi {
     @Serializable
     data class CardProduct(
       @SerialName("id") val id: String? = null,
-      @SerialName("brand") val brand: String,
+      @SerialName("brand") val brand: String? = null,
       @SerialName("category") val category: PaymentCardCategory
     )
 
@@ -484,7 +489,8 @@ interface OrderApi {
       @SerialName("displayName") val displayName: String? = null,
       @SerialName("gateway") val gateway: String? = null,
       @SerialName("gatewayMerchantId") val gatewayMerchantId: String? = null,
-      @SerialName("allowedCardSchemes") val allowedCardSchemes: List<String>? = null
+      @SerialName("allowedAuthMethods") val allowedAuthMethods: List<String>,
+      @SerialName("allowedCardSchemes") val allowedCardSchemes: List<String>,
     )
 
     @Serializable
@@ -527,8 +533,8 @@ interface OrderApi {
 
     @Serializable
     data class TransactionResult(
-      @SerialName("code") val code: String,
-      @SerialName("message") val message: String
+      @SerialName("code") val code: String? = null,
+      @SerialName("message") val message: String? = null
     )
   }
 }
