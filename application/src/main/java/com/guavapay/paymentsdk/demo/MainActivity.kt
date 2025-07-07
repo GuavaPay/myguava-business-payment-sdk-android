@@ -48,43 +48,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastForEach
 import com.guavapay.paymentsdk.demo.theme.PaymentSdkTheme
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory.CREDIT
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory.DEBIT
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory.PREPAID
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork.AMEX
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork.AMERICAN_EXPRESS
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork.DINERS_CLUB
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork.DISCOVER
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork.MASTERCARD
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork.UNIONPAY
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork.VISA
+import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit
 import com.guavapay.paymentsdk.gateway.banking.PaymentMethod
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
 import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayCoroutineScope
 import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayPayload
 import com.guavapay.paymentsdk.gateway.launcher.rememberPaymentGateway
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import kotlin.random.Random
-
-private val baseUrls = listOf("https://sandbox-pgw.myguava.com", "https://cardium-cpg-dev.guavapay.com", "https://api-pgw.myguava.com")
-
-@Serializable data class OrderRequest(val totalAmount: TotalAmount, val referenceNumber: String)
-@Serializable data class TotalAmount(val baseUnits: Double, val currency: String)
-@Serializable data class OrderResponse(val order: Order)
-@Serializable data class Order(val id: String, val referenceNumber: String, val status: String, val totalAmount: ResponseTotalAmount, val expirationDate: String, val sessionToken: String)
-@Serializable data class ResponseTotalAmount(val baseUnits: Double, val currency: String, val localized: String, val minorSubunits: Long)
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -107,26 +90,27 @@ class MainActivity : ComponentActivity() {
   var processing by rememberSaveable { mutableStateOf(false) }
   var paymentState by rememberSaveable { mutableStateOf<PaymentGatewayPayload?>(null) }
 
-  var baseUrl by rememberSaveable { mutableStateOf("https://sandbox-pgw.myguava.com/") }
+  var circuit by rememberSaveable { mutableStateOf(PaymentCircuit.Sandbox) }
   var token by rememberSaveable { mutableStateOf("sk_sand_ZwYAAAAAAADSPUyUhFygHZTn+TH/bDZ6RsZljO3+qhAf+Ed1HPA4jQ") }
   var sum by rememberSaveable { mutableStateOf("100.25") }
   var currency by rememberSaveable { mutableStateOf("GBP") }
+
+  var phoneNumber by rememberSaveable { mutableStateOf("") }
+  var email by rememberSaveable { mutableStateOf("") }
 
   var visaEnabled by rememberSaveable { mutableStateOf(true) }
   var mastercardEnabled by rememberSaveable { mutableStateOf(true) }
   var amexEnabled by rememberSaveable { mutableStateOf(true) }
   var dinnersEnabled by rememberSaveable { mutableStateOf(true) }
   var unionpayEnabled by rememberSaveable { mutableStateOf(true) }
-  var discoverEnabled by rememberSaveable { mutableStateOf(true) }
 
   var debitEnabled by rememberSaveable { mutableStateOf(true) }
   var creditEnabled by rememberSaveable { mutableStateOf(true) }
   var prepaidEnabled by rememberSaveable { mutableStateOf(true) }
 
   var googlePayEnabled by rememberSaveable { mutableStateOf(false) }
-  var savedCardEnabled by rememberSaveable { mutableStateOf(true) }
+  var savedCardEnabled by rememberSaveable { mutableStateOf(false) }
 
-  val locale = Locale.current.platformLocale
   val gateway = paymentState?.let { rememberPaymentGateway(it) }
 
   Column(
@@ -136,14 +120,21 @@ class MainActivity : ComponentActivity() {
       .padding(24.dp)
   ) {
     ApiConfigurationCard(
-      baseUrl = baseUrl,
+      circuit = circuit,
       token = token,
       sum = sum,
       currency = currency,
-      onBaseUrlChange = { baseUrl = it },
+      phoneNumber = phoneNumber,
+      email = email,
+      onCircuitChange = { circuit = it },
       onTokenChange = { token = it },
-      onSumChange = { sum = it },
-      onCurrencyChange = { currency = it }
+      onSumChange = { newValue ->
+        val filtered = newValue.filter { it.isDigit() || it == '.' }.trim()
+        sum = filtered
+      },
+      onCurrencyChange = { currency = it },
+      onPhoneNumberChange = { phoneNumber = it.trim() },
+      onEmailChange = { email = it.trim() }
     )
 
     Spacer(modifier = Modifier.height(16.dp))
@@ -154,7 +145,6 @@ class MainActivity : ComponentActivity() {
       amexEnabled = amexEnabled,
       dinnersEnabled = dinnersEnabled,
       unionpayEnabled = unionpayEnabled,
-      discoverEnabled = discoverEnabled,
       debitEnabled = debitEnabled,
       creditEnabled = creditEnabled,
       prepaidEnabled = prepaidEnabled,
@@ -165,7 +155,6 @@ class MainActivity : ComponentActivity() {
       onAmexChange = { amexEnabled = it },
       onDinnersChange = { dinnersEnabled = it },
       onUnionpayChange = { unionpayEnabled = it },
-      onDiscoverChange = { discoverEnabled = it },
       onDebitChange = { debitEnabled = it },
       onCreditChange = { creditEnabled = it },
       onPrepaidChange = { prepaidEnabled = it },
@@ -187,15 +176,14 @@ class MainActivity : ComponentActivity() {
         scope.launch {
           processing = true
           runCatching {
-            val response = createOrder(baseUrl, token, sum.toDouble(), currency)
+            val response = createOrder(getBaseUrlFor(circuit), token, sum.toDouble(), currency, phoneNumber, email)
 
             val selectedSchemes = mutableSetOf<PaymentCardNetwork>().apply {
               if (visaEnabled) add(VISA)
               if (mastercardEnabled) add(MASTERCARD)
-              if (amexEnabled) add(AMEX)
+              if (amexEnabled) add(AMERICAN_EXPRESS)
               if (unionpayEnabled) add(UNIONPAY)
               if (dinnersEnabled) add(DINERS_CLUB)
-              if (discoverEnabled) add(DISCOVER)
             }
 
             val selectedCardTypes = mutableSetOf<PaymentCardCategory>().apply {
@@ -221,7 +209,8 @@ class MainActivity : ComponentActivity() {
               response.order.sessionToken,
               methods = selectedMethods.toSet(),
               networks = selectedSchemes.toSet(),
-              categories = selectedCardTypes.toSet()
+              categories = selectedCardTypes.toSet(),
+              circuit = circuit,
             )
 
             paymentState = state
@@ -271,16 +260,21 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable private fun ApiConfigurationCard(
-  baseUrl: String,
+  circuit: PaymentCircuit,
   token: String,
   sum: String,
   currency: String,
-  onBaseUrlChange: (String) -> Unit,
+  phoneNumber: String,
+  email: String,
+  onCircuitChange: (PaymentCircuit) -> Unit,
   onTokenChange: (String) -> Unit,
   onSumChange: (String) -> Unit,
-  onCurrencyChange: (String) -> Unit
+  onCurrencyChange: (String) -> Unit,
+  onPhoneNumberChange: (String) -> Unit,
+  onEmailChange: (String) -> Unit
 ) {
-  var expanded by remember { mutableStateOf(false) }
+  var circuitExpanded by remember { mutableStateOf(false) }
+  var currencyExpanded by remember { mutableStateOf(false) }
 
   Card(
     modifier = Modifier.fillMaxWidth(),
@@ -289,11 +283,10 @@ class MainActivity : ComponentActivity() {
   ) {
     Column(modifier = Modifier.padding(16.dp)) {
       Box {
-        val baseUrl = remember(baseUrl) { baseUrl.substringAfterLast("://").removeSuffix("/") }
         OutlinedTextField(
-          value = baseUrl,
+          value = circuit.name,
           onValueChange = { },
-          label = { Text("Base URL") },
+          label = { Text("Environment") },
           readOnly = true,
           colors = OutlinedTextFieldDefaults.colors().copy(unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface),
           trailingIcon = { Text(text = "▼", style = MaterialTheme.typography.bodyMedium) },
@@ -306,20 +299,19 @@ class MainActivity : ComponentActivity() {
             .fillMaxWidth()
             .height(56.dp)
             .padding(0.dp)
-            .clickable { expanded = true }
+            .clickable { circuitExpanded = true }
         )
         DropdownMenu(
-          expanded = expanded,
-          onDismissRequest = { expanded = false }
+          expanded = circuitExpanded,
+          onDismissRequest = { circuitExpanded = false }
         ) {
-          baseUrls.forEach { url ->
-            val url = remember(url) { url.substringAfterLast("://") }
-
+          PaymentCircuit.entries.forEach { circuit ->
             DropdownMenuItem(
-              text = { Text(url) },
+              enabled = circuit != PaymentCircuit.Production,
+              text = { Text(circuit.name) },
               onClick = {
-                onBaseUrlChange(url)
-                expanded = false
+                onCircuitChange(circuit)
+                circuitExpanded = false
               }
             )
           }
@@ -350,27 +342,73 @@ class MainActivity : ComponentActivity() {
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        OutlinedTextField(
-          value = currency,
-          onValueChange = onCurrencyChange,
-          colors = OutlinedTextFieldDefaults.colors().copy(unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface),
-          label = { Text("Currency") },
-          modifier = Modifier.weight(1f)
-        )
+        Box(modifier = Modifier.weight(1f)) {
+          OutlinedTextField(
+            value = currency,
+            onValueChange = { },
+            label = { Text("Currency") },
+            readOnly = true,
+            colors = OutlinedTextFieldDefaults.colors().copy(unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface),
+            trailingIcon = { Text(text = "▼", style = MaterialTheme.typography.bodyMedium) },
+            modifier = Modifier.fillMaxWidth()
+          )
+          Box(
+            modifier = Modifier
+              .fillMaxWidth()
+              .height(56.dp)
+              .clickable { currencyExpanded = true }
+          )
+          DropdownMenu(
+            expanded = currencyExpanded,
+            onDismissRequest = { currencyExpanded = false }
+          ) {
+            TOP_CURRENCIES.fastForEach { (code, name) ->
+              DropdownMenuItem(
+                text = { Text("$code - $name") },
+                onClick = {
+                  onCurrencyChange(code)
+                  currencyExpanded = false
+                }
+              )
+            }
+          }
+        }
       }
+
+      Spacer(modifier = Modifier.height(8.dp))
+
+      OutlinedTextField(
+        value = phoneNumber,
+        onValueChange = onPhoneNumberChange,
+        label = { Text("Phone Number") },
+        placeholder = { Text("+1234567890") },
+        colors = OutlinedTextFieldDefaults.colors().copy(unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+        modifier = Modifier.fillMaxWidth()
+      )
+
+      Spacer(modifier = Modifier.height(8.dp))
+
+      OutlinedTextField(
+        value = email,
+        onValueChange = onEmailChange,
+        label = { Text("Email") },
+        placeholder = { Text("user@example.com") },
+        colors = OutlinedTextFieldDefaults.colors().copy(unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+        modifier = Modifier.fillMaxWidth()
+      )
     }
   }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun CompactPaymentOptionsCard(
+@Composable private fun CompactPaymentOptionsCard(
   visaEnabled: Boolean,
   mastercardEnabled: Boolean,
   amexEnabled: Boolean,
   dinnersEnabled: Boolean,
   unionpayEnabled: Boolean,
-  discoverEnabled: Boolean,
   debitEnabled: Boolean,
   creditEnabled: Boolean,
   prepaidEnabled: Boolean,
@@ -381,7 +419,6 @@ private fun CompactPaymentOptionsCard(
   onAmexChange: (Boolean) -> Unit,
   onDinnersChange: (Boolean) -> Unit,
   onUnionpayChange: (Boolean) -> Unit,
-  onDiscoverChange: (Boolean) -> Unit,
   onDebitChange: (Boolean) -> Unit,
   onCreditChange: (Boolean) -> Unit,
   onPrepaidChange: (Boolean) -> Unit,
@@ -394,7 +431,7 @@ private fun CompactPaymentOptionsCard(
     shape = MaterialTheme.shapes.large
   ) {
     Column(modifier = Modifier.padding(16.dp)) {
-      PaymentSection(title = "Payment Networks") {
+      PaymentSection(title = "Payment Schemes") {
         FilterChip(
           selected = visaEnabled,
           onClick = { onVisaChange(!visaEnabled) },
@@ -450,24 +487,13 @@ private fun CompactPaymentOptionsCard(
             labelColor = MaterialTheme.colorScheme.onSurfaceVariant
           )
         )
-        FilterChip(
-          selected = discoverEnabled,
-          onClick = { onDiscoverChange(!discoverEnabled) },
-          label = { Text("Discover") },
-          colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = MaterialTheme.colorScheme.onSurface,
-            selectedLabelColor = MaterialTheme.colorScheme.inverseOnSurface,
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-          )
-        )
       }
 
       Spacer(modifier = Modifier.height(12.dp))
       HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = .2f))
       Spacer(modifier = Modifier.height(12.dp))
 
-      PaymentSection(title = "Card Types") {
+      PaymentSection(title = "Product card categories") {
         FilterChip(
           selected = debitEnabled,
           onClick = { onDebitChange(!debitEnabled) },
@@ -507,7 +533,7 @@ private fun CompactPaymentOptionsCard(
       HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = .2f))
       Spacer(modifier = Modifier.height(12.dp))
 
-      PaymentSection(title = "Methods") {
+      PaymentSection(title = "Payment methods") {
         FilterChip(
           selected = googlePayEnabled,
           onClick = { onGooglePayChange(!googlePayEnabled) },
@@ -520,6 +546,7 @@ private fun CompactPaymentOptionsCard(
           )
         )
         FilterChip(
+          enabled = false, // TODO: remove this.
           selected = savedCardEnabled,
           onClick = { onSavedCardChange(!savedCardEnabled) },
           label = { Text("Saved Card") },
@@ -536,11 +563,7 @@ private fun CompactPaymentOptionsCard(
 }
 
 @OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun PaymentSection(
-  title: String,
-  content: @Composable () -> Unit
-) {
+@Composable private fun PaymentSection(title: String, content: @Composable () -> Unit) {
   Text(
     text = title,
     style = MaterialTheme.typography.titleMedium,
@@ -570,6 +593,13 @@ private fun PaymentSection(
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary
           )
+          result.payment?.let { transactionResult ->
+            Text(
+              text = "$transactionResult",
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurface
+            )
+          }
         }
 
         is PaymentResult.Failed -> {
@@ -592,37 +622,22 @@ private fun PaymentSection(
             color = MaterialTheme.colorScheme.secondary
           )
         }
+
+        is PaymentResult.Declined -> {
+          Text(
+            text = "🚫 Payment Declined",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.secondary
+          )
+          result.payment?.let { transactionResult ->
+            Text(
+              text = "$transactionResult",
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurface
+            )
+          }
+        }
       }
     }
-  }
-}
-
-private suspend fun createOrder(baseUrl: String, token: String, amount: Double, currency: String): OrderResponse {
-  return withContext(Dispatchers.IO) {
-    val client = OkHttpClient()
-    val json = Json { ignoreUnknownKeys = true }
-
-    val request = OrderRequest(
-      totalAmount = TotalAmount(baseUnits = amount, currency = currency),
-      referenceNumber = Random.nextInt(1000, 9999).toString()
-    )
-
-    val requestBody = json.encodeToString(request)
-      .toRequestBody("application/json".toMediaType())
-
-    val httpRequest = Request.Builder()
-      .url("$baseUrl/order")
-      .addHeader("Authorization", "Bearer $token")
-      .addHeader("Content-Type", "application/json")
-      .post(requestBody)
-      .build()
-
-    val response = client.newCall(httpRequest).execute()
-    if (!response.isSuccessful) {
-      throw Exception("HTTP ${response.code}: ${response.message}")
-    }
-
-    val responseBody = response.body?.string() ?: throw Exception("Empty response")
-    json.decodeFromString<OrderResponse>(responseBody)
   }
 }
