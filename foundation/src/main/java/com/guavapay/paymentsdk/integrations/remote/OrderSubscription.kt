@@ -33,7 +33,11 @@ internal fun RemoteOrderSubscription(lib: LibraryUnit) = flow {
       lib.network.sse.client.events(req).collect { event: SseEvent ->
         when (event) {
           is SseEvent.Open -> i("SSE connection opened for order ${payload.orderId}")
-          is SseEvent.Message -> emit(lib.network.json.unspecified.decodeFromString<GetOrderResponse>(event.data))
+          is SseEvent.Message -> {
+            if (!event.data.contains("PAYMENT_REQUIREMENTS_UPDATED")) { // todo: ??
+              emit(lib.network.json.unspecified.decodeFromString<GetOrderResponse>(event.data))
+            }
+          }
           is SseEvent.Closed -> {
             i("SSE connection closed for order ${payload.orderId}, reconnecting...")
             delay(3000)
