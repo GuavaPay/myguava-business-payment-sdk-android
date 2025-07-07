@@ -28,6 +28,7 @@ import com.guavapay.paymentsdk.R
 import com.guavapay.paymentsdk.presentation.components.atomic.PrimaryButton
 import com.guavapay.paymentsdk.presentation.navigation.Route
 import com.guavapay.paymentsdk.presentation.navigation.Route.AbortRoute
+import com.guavapay.paymentsdk.presentation.navigation.rememberNavBackStack
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
 import com.guavapay.paymentsdk.presentation.screens.Screen
 import com.guavapay.paymentsdk.presentation.screens.abort.AbortScreen.Actions
@@ -94,5 +95,5 @@ internal object AbortScreen : Screen<AbortRoute, Actions> {
 }
 
 @PreviewLightDark @Composable private fun AbortScreenPreview() {
-  PreviewTheme { AbortScreen(SnapshotStateList(), AbortRoute(), Actions()) }
+  PreviewTheme { AbortScreen(rememberNavBackStack(), AbortRoute(), Actions()) }
 }
