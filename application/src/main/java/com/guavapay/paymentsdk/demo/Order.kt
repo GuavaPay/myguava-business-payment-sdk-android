@@ -37,7 +37,7 @@ suspend fun createOrder(baseUrl: String, token: String, amount: Double, currency
             "1" to trimmedPhone
           }
 
-          ContactPhone(countryCode = countryCode, nationalNumber = nationalNumber, fullNumber = trimmedPhone, country = "US"
+          ContactPhone(countryCode = countryCode, nationalNumber = nationalNumber, fullNumber = trimmedPhone, country = "US")
         } else null,
         contactEmail = trimmedEmail.takeIf { it.isNotEmpty() }
       )
