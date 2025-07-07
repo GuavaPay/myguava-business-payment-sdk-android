@@ -25,4 +25,39 @@
     public static void v(...);
 }
 
--keep public class com.guavapay.paymentsdk.gateway.*
+-keepclassmembers enum * {
+    <fields>;
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+-keep class com.guavapay.paymentsdk.gateway.banking.PaymentMethod { *; }
+
+-keep class * implements android.os.Parcelable {
+    public static final android.os.Parcelable$Creator *;
+}
+
+-keep class com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayPayload { *; }
+
+-keep class com.guavapay.paymentsdk.gateway.banking.PaymentResult { *; }
+-keep class com.guavapay.paymentsdk.gateway.banking.PaymentResult$* { *; }
+
+-keep class com.guavapay.paymentsdk.gateway.** { *; }
+
+-keep class com.guavapay.paymentsdk.network.services.BindingsApi.** { *; }
+-keep class com.guavapay.paymentsdk.network.services.OrderApi.** { *; }
+
+-keep class androidx.startup.** { *; }
+-keep class * implements androidx.startup.Initializer {
+    <init>();
+    public void create(android.content.Context);
+    public java.util.List dependencies();
+}
+
+-keep class com.guavapay.paymentsdk.LibraryZygote { *; }
+-keep class com.guavapay.paymentsdk.platform.context.IsolatedInitializer { *; }
+
+-keepnames class * extends androidx.startup.Initializer
+-keep class * extends androidx.startup.Initializer {
+    <init>();
+}
