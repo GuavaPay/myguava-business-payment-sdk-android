@@ -31,8 +31,6 @@ sealed interface PaymentResult : Serializable {
 
   companion object {
     internal fun OrderApi.Models.ExtendedAmount.toResult() = Amount(amount = baseUnits, currency = currency.currencyCode)
-    internal fun OrderApi.Models.TransactionResult.toResult() = TransactionResult(code = code, message = message)
-    internal fun OrderApi.Models.Reversal.toResult() = Reversal(result = result?.toResult(), reason = reason)
     internal fun OrderApi.Models.Order.toResult() = Order(id = id, status = status, referenceNumber = referenceNumber, amount = totalAmount.toResult())
     internal fun OrderApi.Models.Payment.toResult() = Payment(id = id, date = date, rrn = rrn, authCode = authCode, resultMessage = result?.message)
 
