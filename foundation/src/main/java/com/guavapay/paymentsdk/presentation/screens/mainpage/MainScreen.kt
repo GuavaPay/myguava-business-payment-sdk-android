@@ -1,5 +1,7 @@
 package com.guavapay.paymentsdk.presentation.screens.mainpage
 
+import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -32,8 +34,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -43,41 +49,98 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.guavapay.paymentsdk.R
 import com.guavapay.paymentsdk.gateway.banking.PaymentKind
-import com.guavapay.paymentsdk.gateway.banking.PaymentMethod
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
-import com.guavapay.paymentsdk.gateway.launcher.LocalGatewayState
+import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayCoroutineScope
+import com.guavapay.paymentsdk.gateway.vendors.googlepay.rememberGPayOrchestrator
 import com.guavapay.paymentsdk.presentation.components.atomic.CircularProgressIndicator
 import com.guavapay.paymentsdk.presentation.components.atomic.GooglePayButton
 import com.guavapay.paymentsdk.presentation.components.atomic.PrimaryButton
 import com.guavapay.paymentsdk.presentation.components.compound.CheckBoxCompound
 import com.guavapay.paymentsdk.presentation.components.compound.PaymentNetworksIcons
 import com.guavapay.paymentsdk.presentation.components.compound.TextFieldCompound
+import com.guavapay.paymentsdk.presentation.navigation.Route
+import com.guavapay.paymentsdk.presentation.navigation.Route.AbortRoute
+import com.guavapay.paymentsdk.presentation.navigation.Route.HomeRoute
+import com.guavapay.paymentsdk.presentation.navigation.rememberNavBackStack
 import com.guavapay.paymentsdk.presentation.platform.CardNumberVisualTransformation
 import com.guavapay.paymentsdk.presentation.platform.CvcVisualTransformation
 import com.guavapay.paymentsdk.presentation.platform.ExpiryDateVisualTransformation
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
+import com.guavapay.paymentsdk.presentation.platform.Text
 import com.guavapay.paymentsdk.presentation.platform.ViewModelFactory
 import com.guavapay.paymentsdk.presentation.platform.string
+import com.guavapay.paymentsdk.presentation.screens.Screen
+import com.guavapay.paymentsdk.presentation.screens.mainpage.MainScreen.Actions
+import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM.Effect.AbortDueConditions
+import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM.Effect.AbortDueError
+import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM.Effect.ChallengeRequired
+import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM.Effect.FinishPayment
+import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM.Effect.FocusCvv
+import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM.Effect.FocusExp
+import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM.Effect.FocusPan
+import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM.Effect.HideKeyboard
+import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM.Effect.PaymentError
+import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM.Effect.RequiredContacts
 import com.guavapay.paymentsdk.rememberLibraryUnit
+import com.myguava.android.myguava3ds2.customization.GuavaUICustomizationFactory
+import com.myguava.android.myguava3ds2.transaction.ChallengeContract
+import com.myguava.android.myguava3ds2.transaction.ChallengeParameters
+import com.myguava.android.myguava3ds2.transaction.ChallengeResult
+import com.myguava.android.myguava3ds2.transaction.InitChallengeResult
+import com.myguava.android.myguava3ds2.transaction.Transaction
+import kotlinx.coroutines.launch
+import java.io.Serializable
 
-internal object MainPageScreen {
-  data class Actions(val finish: (PaymentResult) -> Unit = {})
+internal object MainScreen : Screen<HomeRoute, Actions> {
+  data class Actions(val finish: (PaymentResult) -> Unit = @JvmSerializableLambda {}) : Serializable
 
-  @Composable operator fun invoke(actions: Actions) {
-    val gs = LocalGatewayState.current
+  @Composable override operator fun invoke(nav: SnapshotStateList<Route>, route: HomeRoute, actions: Actions) {
     val lib = rememberLibraryUnit()
-    val vm = viewModel<MainPageVM>(factory = ViewModelFactory { MainPageVM(lib, gs) })
+    val vm = viewModel<MainVM>(factory = ViewModelFactory { MainVM(lib) })
     val state by vm.state.collectAsState()
 
+    val panFocusRequester = remember(::FocusRequester)
+    val expFocusRequester = remember(::FocusRequester)
+    val cvvFocusRequester = remember(::FocusRequester)
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    val challengeLauncher = rememberLauncherForActivityResult(ChallengeContract()) { challengeResult ->
+      when (challengeResult) {
+        is ChallengeResult.Canceled -> vm.handles.unbusy()
+        is ChallengeResult.Failed, is ChallengeResult.ProtocolError, is ChallengeResult.RuntimeError, is ChallengeResult.Timeout -> nav.add(AbortRoute())
+        is ChallengeResult.Succeeded -> {}
+      }
+    }
+
+    val activity = LocalActivity.current!!
+
     LaunchedEffect(vm) {
+      fun launchChallenge(challengeParams: ChallengeParameters, transaction: Transaction) {
+        vm.handles.prepareChallengeConfig(challengeParams)
+
+        val challengeRepositoryFactory = vm.handles.getChallengeRepositoryFactory(sdkTransactionId = transaction.sdkTransactionId, uiCustomization = GuavaUICustomizationFactory().myGuavaCustomization(activity))
+        PaymentGatewayCoroutineScope().launch {
+          val startChallenge = challengeRepositoryFactory.startChallenge(transaction.createInitChallengeArgs(challengeParams, 10))
+          if (startChallenge is InitChallengeResult.Start) {
+            challengeLauncher.launch(startChallenge.challengeViewArgs)
+          } else {
+            nav.add(AbortRoute()) // todo: 3dsException.
+          }
+        }
+      }
+
       vm.effects.collect { effect ->
         when (effect) {
-          is MainPageVM.Effect.RequiredContacts -> { /* Navigate onto ContactScreen */ }
-          is MainPageVM.Effect.AbortDueError -> { /* Navigate to AbortScreen */ }
-          is MainPageVM.Effect.PaymentError -> { /* TODO() */ }
-          is MainPageVM.Effect.NavigateToResult -> {
-            actions.finish(if (effect.success) PaymentResult.Completed else PaymentResult.Completed /* Mocked until not integrated with BE */)
-          }
+          is RequiredContacts -> { /* Navigate onto ContactScreen */ }
+          is AbortDueError -> nav.removeLastOrNull().also { nav.add(AbortRoute(effect.throwable)) }
+          is PaymentError -> { /* TODO() */ }
+          is AbortDueConditions -> { /* TODO() */ }
+          is FinishPayment -> actions.finish(effect.result)
+          is FocusPan -> panFocusRequester.requestFocus()
+          is FocusExp -> expFocusRequester.requestFocus()
+          is FocusCvv -> cvvFocusRequester.requestFocus()
+          is HideKeyboard -> keyboardController?.hide()
+          is ChallengeRequired -> launchChallenge(challengeParams = effect.challengeParameters, transaction = effect.transaction)
         }
       }
     }
@@ -103,25 +166,31 @@ internal object MainPageScreen {
 
       Spacer(modifier = Modifier.height(20.dp))
 
-      if (state.external.flags.gpay) {
-        val gpay = remember(gs.instruments.methods) { gs.instruments.instrument<PaymentMethod.GooglePay>() }
+      if (state.external.busy) {
+        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+        return@Column
+      }
 
-        if (gpay != null) {
-          GooglePayButton(gs, vm.handles::gpay)
-          Spacer(modifier = Modifier.height(16.dp))
-          OrPayByCardDivider(title = stringResource(R.string.initial_or_pay_by_card))
-          Spacer(modifier = Modifier.height(16.dp))
-        }
+      if (state.external.gpay?.available == true && state.internal.orderData != null && state.internal.googlePayContext != null) {
+        val orchestrator = rememberGPayOrchestrator(
+          order = state.internal.orderData!!,
+          gpayctx = state.internal.googlePayContext!!
+        )
+        GooglePayButton(orchestrator = orchestrator, result = vm.handles::gpay)
+        Spacer(modifier = Modifier.height(16.dp))
+        OrPayByCardDivider(title = stringResource(R.string.initial_or_pay_by_card))
+        Spacer(modifier = Modifier.height(16.dp))
       }
 
       TextFieldCompound(
+        modifier = Modifier.focusRequester(panFocusRequester),
         header = stringResource(R.string.initial_newcard_number),
         value = state.external.fields.pan,
         onValueChange = vm.handles::pan,
         onFocusLost = vm.handles::panFocusLost,
         placeholder = stringResource(R.string.initial_newcard_number_placeholder),
         loading = state.external.fields.panBusy,
-        endIcon = state.external.fields.panNetwork?.imageres?.let { painterResource(it) },
+        endIcon = state.external.fields.panNetwork?.image?.let { painterResource(it) },
         error = state.external.fields.panError?.string(),
         singleLine = true,
         maxLength = 19,
@@ -138,19 +207,22 @@ internal object MainPageScreen {
         onSecurityCodeChange = vm.handles::cvv,
         onSecurityCodeFocusLost = vm.handles::cvvFocusLost,
         maxCvcLength = state.external.fields.cvvLength,
-        saveCardEnabled = state.external.flags.save,
-        onDone = vm.handles::pay
+        saveCardEnabled = state.external.saved?.available == true,
+        onDone = vm.handles::pay,
+        expFocusRequester = expFocusRequester,
+        cvvFocusRequester = cvvFocusRequester
       )
 
-      Spacer(modifier = Modifier.height(24.dp))
+      if (state.external.saved?.available == true) {
+        Spacer(modifier = Modifier.height(24.dp))
 
-      if (state.external.flags.save) {
         SaveCardBlock(
           checked = state.external.saving,
           onCheckedChange = vm.handles::toggleSave,
           cardName = state.external.fields.cn,
           onCardNameChange = vm.handles::cn,
           onCardNameFocusLost = vm.handles::cnFocusLost,
+          cardNameError = state.external.fields.cnError,
           onDone = vm.handles::pay
         )
       }
@@ -196,7 +268,7 @@ internal object MainPageScreen {
   }
 
   @Composable private fun CardFieldsGroup(
-    state: MainPageVM.State,
+    state: MainVM.State,
     onExpirationDateChange: (String) -> Unit,
     onExpirationDateFocusLost: () -> Unit,
     securityCode: String,
@@ -205,13 +277,17 @@ internal object MainPageScreen {
     maxCvcLength: Int,
     saveCardEnabled: Boolean,
     onDone: (() -> Unit)? = null,
+    expFocusRequester: FocusRequester,
+    cvvFocusRequester: FocusRequester,
   ) {
     Row(
       modifier = Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
       TextFieldCompound(
-        modifier = Modifier.weight(1f),
+        modifier = Modifier
+          .weight(1f)
+          .focusRequester(expFocusRequester),
         value = state.external.fields.exp,
         onValueChange = onExpirationDateChange,
         onFocusLost = onExpirationDateFocusLost,
@@ -224,7 +300,9 @@ internal object MainPageScreen {
       )
 
       TextFieldCompound(
-        modifier = Modifier.weight(1f),
+        modifier = Modifier
+          .weight(1f)
+          .focusRequester(cvvFocusRequester),
         header = stringResource(R.string.initial_newcard_cvv),
         value = securityCode,
         onValueChange = onSecurityCodeChange,
@@ -246,6 +324,7 @@ internal object MainPageScreen {
     cardName: String,
     onCardNameChange: (String) -> Unit,
     onCardNameFocusLost: () -> Unit,
+    cardNameError: Text?,
     onDone: (() -> Unit)? = null,
   ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -276,6 +355,7 @@ internal object MainPageScreen {
             placeholder = stringResource(R.string.initial_newcard_name_placeholder),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
             onFocusLost = onCardNameFocusLost,
+            error = cardNameError?.string(),
             onDoneAction = onDone
           )
         }
@@ -296,7 +376,7 @@ internal object MainPageScreen {
         )
       } else {
         val buttonKind = kind.text()
-        val text = remember (amount, kind) {
+        val text = remember(amount, kind) {
           buildString {
             append(buttonKind)
             if (amount != null) {
@@ -313,8 +393,10 @@ internal object MainPageScreen {
       }
     }
   }
+
+  private fun readResolve(): Any = MainScreen
 }
 
 @PreviewLightDark @Composable private fun PaymentGatewayMainPagePreview() {
-  PreviewTheme { MainPageScreen(actions = MainPageScreen.Actions()) }
+  PreviewTheme { MainScreen(rememberNavBackStack(), HomeRoute, Actions()) }
 }
