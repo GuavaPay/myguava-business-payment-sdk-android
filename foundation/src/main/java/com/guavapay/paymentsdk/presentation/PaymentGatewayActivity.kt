@@ -74,11 +74,13 @@ internal class PaymentGatewayActivity : ComponentActivity() {
         is Canceled -> putExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_CANCELED)
         is Completed -> {
           putExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_COMPLETED)
-          result.payment?.let { putExtra(EXTRA_SDK_SUCCESS_PAYMENT, it) }
+          result.payment?.let { putExtra(EXTRA_SDK_SUCCESS_PAYMENT_PAYMENT, it) }
+          result.order?.let { putExtra(EXTRA_SDK_SUCCESS_PAYMENT_ORDER, it) }
         }
         is Declined -> {
           putExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_DECLINED)
-          result.payment?.let { putExtra(EXTRA_SDK_SUCCESS_PAYMENT, it) }
+          result.payment?.let { putExtra(EXTRA_SDK_SUCCESS_PAYMENT_PAYMENT, it) }
+          result.order?.let { putExtra(EXTRA_SDK_SUCCESS_PAYMENT_ORDER, it) }
         }
         is Failed -> {
           putExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_FAILED)
@@ -102,7 +104,8 @@ internal class PaymentGatewayActivity : ComponentActivity() {
     const val EXTRA_SDK_GATEWAY_PAYLOAD = "sdk_gateway_payload"
     const val EXTRA_SDK_RESULT_CODE = "sdk_result_code"
     const val EXTRA_SDK_ERROR_THROWABLE = "sdk_error_throwable"
-    const val EXTRA_SDK_SUCCESS_PAYMENT = "sdk_success_payment"
+    const val EXTRA_SDK_SUCCESS_PAYMENT_PAYMENT = "sdk_success_payment_payment"
+    const val EXTRA_SDK_SUCCESS_PAYMENT_ORDER = "sdk_success_payment_order"
 
     const val SDK_RESULT_CANCELED = 0
     const val SDK_RESULT_COMPLETED = 1

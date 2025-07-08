@@ -1,12 +1,21 @@
 package com.guavapay.paymentsdk.network
 
 import com.guavapay.paymentsdk.LibraryUnit
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork
+import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit
 import com.guavapay.paymentsdk.logging.d
 import com.guavapay.paymentsdk.logging.i
+import com.guavapay.paymentsdk.network.serializers.BigDecimalSerializer
+import com.guavapay.paymentsdk.network.serializers.CurrencySerializer
+import com.guavapay.paymentsdk.network.serializers.PaymentCardCategorySerializer
+import com.guavapay.paymentsdk.network.serializers.PaymentCardNetworkSerializer
 import com.guavapay.paymentsdk.network.services.OrderApi
 import com.guavapay.paymentsdk.network.ssevents.SseClient
+import com.guavapay.paymentsdk.platform.function.lazy
 import com.guavapay.paymentsdk.platform.manifest.manifestFields
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.modules.SerializersModule
 import okhttp3.Cache
 import okhttp3.Dispatcher
 import okhttp3.Interceptor
@@ -18,10 +27,10 @@ import okhttp3.logging.HttpLoggingInterceptor.Level.BODY
 import retrofit2.Converter
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import java.math.BigDecimal
+import java.util.Currency
 import java.util.UUID
 import java.util.concurrent.TimeUnit.SECONDS
-import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit
-import com.guavapay.paymentsdk.platform.function.lazy
 
 internal class NetworkUnit(private val lib: LibraryUnit) {
   private val dispatcher = Dispatcher(lib.coroutine.executors.common)
@@ -31,6 +40,12 @@ internal class NetworkUnit(private val lib: LibraryUnit) {
     val unspecified = Json {
       ignoreUnknownKeys = true
       encodeDefaults = true
+      serializersModule = SerializersModule {
+        contextual(BigDecimal::class, BigDecimalSerializer)
+        contextual(Currency::class, CurrencySerializer)
+        contextual(PaymentCardCategory::class, PaymentCardCategorySerializer)
+        contextual(PaymentCardNetwork::class, PaymentCardNetworkSerializer)
+      }
     }
   }
 

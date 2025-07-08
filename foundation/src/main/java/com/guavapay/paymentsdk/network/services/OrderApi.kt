@@ -2,6 +2,7 @@ package com.guavapay.paymentsdk.network.services
 
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.Response
@@ -12,6 +13,8 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
+import java.math.BigDecimal
+import java.util.Currency
 
 interface OrderApi {
   @POST("order")
@@ -150,7 +153,7 @@ interface OrderApi {
 
     @Serializable
     data class SupportedCryptocurrencyRequest(
-      @SerialName("orderCurrency") val orderCurrency: String,
+      @SerialName("orderCurrency") @Contextual val orderCurrency: Currency,
       @SerialName("paymentCurrencies") val paymentCurrencies: List<String>
     )
 
@@ -162,14 +165,14 @@ interface OrderApi {
     @Serializable
     data class ExchangeRateRequest(
       @SerialName("orderAmount") val orderAmount: Amount? = null,
-      @SerialName("paymentCurrency") val paymentCurrency: String
+      @SerialName("paymentCurrency") @Contextual val paymentCurrency: Currency
     )
 
     @Serializable
     data class ExchangeRateResponse(
       @SerialName("from") val from: String? = null,
       @SerialName("to") val to: String? = null,
-      @SerialName("rate") val rate: Double? = null,
+      @SerialName("rate") @Contextual val rate: BigDecimal? = null,
       @SerialName("orderAmount") val orderAmount: ExtendedAmount? = null,
       @SerialName("paymentAmount") val paymentAmount: ExtendedAmount? = null,
       @SerialName("token") val token: String? = null
@@ -182,7 +185,7 @@ interface OrderApi {
 
     @Serializable
     data class CardRangeResponse(
-        @SerialName("cardScheme") val cardScheme: PaymentCardNetwork? = null,
+        @SerialName("cardScheme") @Contextual val cardScheme: PaymentCardNetwork? = null,
         @SerialName("product") val product: CardProduct? = null
     )
 
@@ -193,7 +196,7 @@ interface OrderApi {
 
     @Serializable
     data class CardResolveResponse(
-        @SerialName("cardScheme") val cardScheme: PaymentCardNetwork,
+        @SerialName("cardScheme") @Contextual val cardScheme: PaymentCardNetwork,
         @SerialName("paymentLockReason") val paymentLockReason: String? = null
     )
 
@@ -258,14 +261,14 @@ interface OrderApi {
 
     @Serializable
     data class Amount(
-      @SerialName("baseUnits") val baseUnits: Double,
-      @SerialName("currency") val currency: String
+      @SerialName("baseUnits") @Contextual val baseUnits: BigDecimal,
+      @SerialName("currency") @Contextual val currency: Currency
     )
 
     @Serializable
     data class ExtendedAmount(
-      @SerialName("baseUnits") val baseUnits: Double,
-      @SerialName("currency") val currency: String,
+      @SerialName("baseUnits") @Contextual val baseUnits: BigDecimal,
+      @SerialName("currency") @Contextual val currency: Currency,
       @SerialName("minorSubunits") val minorSubunits: Long,
       @SerialName("localized") val localized: String
     )
@@ -279,8 +282,8 @@ interface OrderApi {
       @SerialName("expirationDate") val expirationDate: String,
       @SerialName("sessionToken") val sessionToken: String,
       @SerialName("availablePaymentMethods") val availablePaymentMethods: List<String>,
-      @SerialName("availableCardSchemes") val availableCardSchemes: List<PaymentCardNetwork>,
-      @SerialName("availableCardProductCategories") val availableCardProductCategories: List<PaymentCardCategory>,
+      @SerialName("availableCardSchemes") @Contextual val availableCardSchemes: List<PaymentCardNetwork>,
+      @SerialName("availableCardProductCategories") @Contextual val availableCardProductCategories: List<PaymentCardCategory>,
       @SerialName("availablePaymentCurrencies") val availablePaymentCurrencies: List<String> = emptyList(),
       @SerialName("redirectUrl") val redirectUrl: String,
       @SerialName("purpose") val purpose: String,
@@ -382,8 +385,6 @@ interface OrderApi {
       @SerialName("paymentData") val paymentData: kotlinx.serialization.json.JsonElement? = null
     )
 
-
-
     @Serializable
     data class DeviceData(
       @SerialName("browserData") val browserData: BrowserData? = null,
@@ -480,7 +481,7 @@ interface OrderApi {
     data class CardProduct(
       @SerialName("id") val id: String? = null,
       @SerialName("brand") val brand: String? = null,
-      @SerialName("category") val category: PaymentCardCategory
+      @SerialName("category") @Contextual val category: PaymentCardCategory
     )
 
     @Serializable
@@ -502,7 +503,7 @@ interface OrderApi {
     data class Payment(
       @SerialName("id") val id: String? = null,
       @SerialName("date") val date: String? = null,
-      @SerialName("exchangeRate") val exchangeRate: Double? = null,
+      @SerialName("exchangeRate") @Contextual val exchangeRate: BigDecimal? = null,
       @SerialName("amount") val amount: ExtendedAmount? = null,
       @SerialName("referenceNumber") val referenceNumber: String? = null,
       @SerialName("result") val result: TransactionResult? = null,

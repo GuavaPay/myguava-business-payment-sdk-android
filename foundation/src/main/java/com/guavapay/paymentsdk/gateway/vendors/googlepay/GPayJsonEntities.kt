@@ -68,7 +68,7 @@ internal fun buildPaymentDataRequestJson(context: GooglePayContext, order: Order
   val transactionInfo = TransactionInfo(
     totalPriceStatus = "FINAL",
     totalPrice = order.totalAmount.baseUnits.toString(),
-    currencyCode = order.totalAmount.currency,
+    currencyCode = order.totalAmount.currency.currencyCode,
     countryCode = locale.country.takeIf(String::isNotBlank) ?: "US" // Never must happen.
   )
 

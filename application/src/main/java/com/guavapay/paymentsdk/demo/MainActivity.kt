@@ -307,7 +307,7 @@ class MainActivity : ComponentActivity() {
         ) {
           PaymentCircuit.entries.forEach { circuit ->
             DropdownMenuItem(
-              enabled = circuit != PaymentCircuit.Production,
+              enabled = circuit != PaymentCircuit.Production && circuit != PaymentCircuit.Development,
               text = { Text(circuit.name) },
               onClick = {
                 onCircuitChange(circuit)
@@ -593,13 +593,11 @@ class MainActivity : ComponentActivity() {
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary
           )
-          result.payment?.let { transactionResult ->
-            Text(
-              text = "$transactionResult",
-              style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.onSurface
-            )
-          }
+          Text(
+            text = "$result",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface
+          )
         }
 
         is PaymentResult.Failed -> {
@@ -629,13 +627,11 @@ class MainActivity : ComponentActivity() {
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.secondary
           )
-          result.payment?.let { transactionResult ->
-            Text(
-              text = "$transactionResult",
-              style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.onSurface
-            )
-          }
+          Text(
+            text = "$result",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface
+          )
         }
       }
     }

@@ -4,7 +4,6 @@ import com.guavapay.paymentsdk.R
 import com.guavapay.paymentsdk.network.serializers.PaymentCardNetworkSerializer
 import kotlinx.serialization.Serializable
 
-@Serializable(with = PaymentCardNetworkSerializer::class)
 enum class PaymentCardNetwork(val image: Int, val pan: Int, val cvc: Int) {
   VISA(R.drawable.ic_logo_cn_visa, 16, 3),
   MASTERCARD(R.drawable.ic_logo_cn_mastercard, 16, 3),
