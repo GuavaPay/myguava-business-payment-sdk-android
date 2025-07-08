@@ -39,9 +39,11 @@ import kotlinx.coroutines.launch
     }
   }
 
+  val payload = remember(orchestrator.isContextReady) { orchestrator.buttonPayload }
+
   com.google.pay.button.PayButton(
     onClick = { PaymentGatewayCoroutineScope().launch { result(orchestrator.start()) } },
-    allowedPaymentMethods = orchestrator.buttonPayload,
+    allowedPaymentMethods = payload,
     modifier = Modifier.fillMaxWidth().height(sizes.button().height),
     theme = if (isSystemInDarkTheme()) ButtonTheme.Light else ButtonTheme.Dark,
     type = type,
