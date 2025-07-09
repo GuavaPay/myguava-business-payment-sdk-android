@@ -15,8 +15,12 @@ android {
   defaultConfig {
     minSdk = 21
 
+    version = "0.0.1"
+
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     consumerProguardFiles("consumer-rules.pro")
+
+    base.archivesName.set("myguava-business-payment-sdk-android-v$version")
   }
 
   sourceSets.named("main") {
