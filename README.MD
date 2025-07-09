@@ -25,22 +25,9 @@
 
 ```kotlin
 dependencies {
-  implementation("com.guavapay:paymentsdk:1.0.0")
+  implementation("com.guavapay:myguava-business-payment-sdk-android:0.0.1")
 }
 ```
-
-### 2. Manual dependency adding
-
-- Create libs directory
-- Add the foundation-xxx.aar where xxx is release or debug, to the libs directory.
-- Modify your build.gradle.kts and add to implementations this library.
-```kotlin
-implementation(files("libs/foundation-xxx.aar"))
-```
-
->Important!
-
-Need to add manually dependencies for foundation. **(See point 5)**
 
 ## Usage
 
@@ -50,10 +37,15 @@ Using MyGuava Payment SDK is very simple, all you need is to call one method and
 
 First, you need to create a configuration for the payment SDK, where you describe which payment methods, card categories, payment systems, theme you would like to see, and also pass the necessary data for the SDK to work (`orderId` and `sessionToken`) that you get after creating an order.
 
+> **WARNING:**  
+> Register orders using your backed.
+>
+> Do not pass the API key to the mobile client. Only the session token and order ID created on order registration must be passed to the mobile client.
+
+
 The minimal configuration is very simple:
 
 ```kotlin
-val order = create()
 val payload = PaymentGatewayPayload(order.id, order.sessionToken)
 ```
 
@@ -98,6 +90,11 @@ To select the environment, you can do it in two ways:
   android:name="com.guavapay.paymentsdk.environment"
   android:value="sandbox"/>
 ```
+where:
+* `android:value="sandbox"` - sandbox environment
+* `android:value="production"` - production environment
+
+
 2. Passing to PaymentGatewayPayload (takes priority over manifest):
 ```kotlin
 val payload = PaymentGatewayPayload(order.id, order.sessionToken, circuit = PaymentCircuit.Sandbox)

@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.util.Properties
 
 plugins {
   alias(libs.plugins.android.library)
@@ -6,7 +7,10 @@ plugins {
   alias(libs.plugins.kotlin.compose)
   alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.kotlin.parcelize)
+  `maven-publish`
 }
+
+val versionName = "0.0.1"
 
 android {
   namespace = "com.guavapay.paymentsdk"
@@ -15,12 +19,10 @@ android {
   defaultConfig {
     minSdk = 21
 
-    version = "0.0.1"
-
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     consumerProguardFiles("consumer-rules.pro")
 
-    base.archivesName.set("myguava-business-payment-sdk-android-v$version")
+    base.archivesName.set("myguava-business-payment-sdk-android-v$versionName")
   }
 
   sourceSets.named("main") {
@@ -157,4 +159,43 @@ dependencies {
   androidTestImplementation(libs.androidx.junit)
   androidTestImplementation(libs.androidx.espresso.core)
   androidTestImplementation(platform(libs.compose.bom))
+}
+
+publishing {
+  publications {
+    create<MavenPublication>("release") {
+      afterEvaluate {
+        from(components["release"])
+      }
+
+      groupId = "com.guavapay.myguava.business"
+      artifactId = "payment-sdk-android"
+      version = android.defaultConfig.versionName ?: "0.0.1"
+
+      artifact(tasks.register("androidSourcesJar", Jar::class) {
+        archiveClassifier.set("sources")
+        from(android.sourceSets.getByName("main").java.srcDirs)
+      })
+    }
+  }
+
+  repositories {
+    maven {
+      url = uri("https://nexus.guavapay.com/repository/maven-releases/")
+      name = "Nexus"
+      credentials {
+        val localProperties = Properties()
+        val localPropertiesFile = File(rootDir, "local.properties")
+        if (localPropertiesFile.exists()) {
+          localPropertiesFile.inputStream().use { localProperties.load(it) }
+        }
+        username = localProperties.getProperty("nexus.maven.username") ?: ""
+        password = localProperties.getProperty("nexus.maven.password") ?: ""
+      }
+
+      authentication {
+        create<BasicAuthentication>("basic")
+      }
+    }
+  }
 }
