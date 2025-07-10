@@ -2,14 +2,14 @@ package com.guavapay.paymentsdk.network
 
 import com.guavapay.paymentsdk.LibraryUnit
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme
 import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit
 import com.guavapay.paymentsdk.logging.d
 import com.guavapay.paymentsdk.logging.i
 import com.guavapay.paymentsdk.network.serializers.BigDecimalSerializer
 import com.guavapay.paymentsdk.network.serializers.CurrencySerializer
 import com.guavapay.paymentsdk.network.serializers.PaymentCardCategorySerializer
-import com.guavapay.paymentsdk.network.serializers.PaymentCardNetworkSerializer
+import com.guavapay.paymentsdk.network.serializers.PaymentCardSchemeSerializer
 import com.guavapay.paymentsdk.network.services.OrderApi
 import com.guavapay.paymentsdk.network.ssevents.SseClient
 import com.guavapay.paymentsdk.platform.function.lazy
@@ -44,7 +44,7 @@ internal class NetworkUnit(private val lib: LibraryUnit) {
         contextual(BigDecimal::class, BigDecimalSerializer)
         contextual(Currency::class, CurrencySerializer)
         contextual(PaymentCardCategory::class, PaymentCardCategorySerializer)
-        contextual(PaymentCardNetwork::class, PaymentCardNetworkSerializer)
+        contextual(PaymentCardScheme::class, PaymentCardSchemeSerializer)
       }
     }
   }

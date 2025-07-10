@@ -1,7 +1,7 @@
 package com.guavapay.paymentsdk.network.services
 
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -185,8 +185,8 @@ interface OrderApi {
 
     @Serializable
     data class CardRangeResponse(
-        @SerialName("cardScheme") @Contextual val cardScheme: PaymentCardNetwork? = null,
-        @SerialName("product") val product: CardProduct? = null
+      @SerialName("cardScheme") @Contextual val cardScheme: PaymentCardScheme? = null,
+      @SerialName("product") val product: CardProduct? = null
     )
 
     @Serializable
@@ -196,8 +196,8 @@ interface OrderApi {
 
     @Serializable
     data class CardResolveResponse(
-        @SerialName("cardScheme") @Contextual val cardScheme: PaymentCardNetwork,
-        @SerialName("paymentLockReason") val paymentLockReason: String? = null
+      @SerialName("cardScheme") @Contextual val cardScheme: PaymentCardScheme,
+      @SerialName("paymentLockReason") val paymentLockReason: String? = null
     )
 
     @Serializable
@@ -282,7 +282,7 @@ interface OrderApi {
       @SerialName("expirationDate") val expirationDate: String,
       @SerialName("sessionToken") val sessionToken: String,
       @SerialName("availablePaymentMethods") val availablePaymentMethods: List<String>,
-      @SerialName("availableCardSchemes") @Contextual val availableCardSchemes: List<PaymentCardNetwork>,
+      @SerialName("availableCardSchemes") @Contextual val availableCardSchemes: List<PaymentCardScheme>,
       @SerialName("availableCardProductCategories") @Contextual val availableCardProductCategories: List<PaymentCardCategory>,
       @SerialName("availablePaymentCurrencies") val availablePaymentCurrencies: List<String> = emptyList(),
       @SerialName("redirectUrl") val redirectUrl: String,

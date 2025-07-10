@@ -3,7 +3,7 @@ package com.guavapay.paymentsdk.gateway.launcher
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme
 import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit
 import com.guavapay.paymentsdk.gateway.banking.PaymentKind
 import com.guavapay.paymentsdk.gateway.banking.PaymentMethod
@@ -19,8 +19,8 @@ data class PaymentGatewayPayload(
   val circuit: PaymentCircuit? = null,
   val kind: PaymentKind = PaymentKind.Pay,
   val methods: Set<PaymentMethod> = PaymentMethod.Entries,
-  val networks: Set<PaymentCardNetwork> = PaymentCardNetwork.entries.toSet(), // todo: schemes
-  val categories: Set<PaymentCardCategory> = PaymentCardCategory.entries.toSet(), // todo: card product category
+  val schemes: Set<PaymentCardScheme> = PaymentCardScheme.entries.toSet(),
+  val categories: Set<PaymentCardCategory> = PaymentCardCategory.entries.toSet(),
   val threedsLooknfeel: GUiCustomization? = null,
   val looknfeel: PaymentGatewayLooknfeel = PaymentGatewayLooknfeel { PrebuiltSdkTheme { it() } },
 ) : Serializable {

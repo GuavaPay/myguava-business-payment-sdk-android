@@ -1,10 +1,10 @@
 package com.guavapay.paymentsdk.gateway.vendors.googlepay
 
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork.AMERICAN_EXPRESS
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork.MASTERCARD
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork.UNIONPAY
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork.VISA
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme.AMERICAN_EXPRESS
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme.MASTERCARD
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme.UNIONPAY
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme.VISA
 import com.guavapay.paymentsdk.network.services.OrderApi.Models.GooglePayContext
 import com.guavapay.paymentsdk.network.services.OrderApi.Models.Order
 import kotlinx.serialization.Serializable
@@ -24,7 +24,7 @@ private val json = Json { encodeDefaults = true ; ignoreUnknownKeys = true }
 @Serializable internal data class TransactionInfo(val totalPriceStatus: String, val totalPrice: String, val currencyCode: String, val countryCode: String)
 @Serializable internal data class MerchantInfo(val merchantId: String, val merchantName: String)
 
-internal val PaymentCardNetwork.gpayname get() = when (this) {
+internal val PaymentCardScheme.gpayname get() = when (this) {
   VISA -> "VISA"
   MASTERCARD -> "MASTERCARD"
   AMERICAN_EXPRESS -> "AMEX"

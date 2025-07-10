@@ -55,12 +55,12 @@ import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory.CREDIT
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory.DEBIT
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory.PREPAID
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork.AMERICAN_EXPRESS
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork.DINERS_CLUB
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork.MASTERCARD
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork.UNIONPAY
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork.VISA
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme.AMERICAN_EXPRESS
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme.DINERS_CLUB
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme.MASTERCARD
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme.UNIONPAY
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme.VISA
 import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit
 import com.guavapay.paymentsdk.gateway.banking.PaymentMethod
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
@@ -178,7 +178,7 @@ class MainActivity : ComponentActivity() {
           runCatching {
             val response = createOrder(getBaseUrlFor(circuit), token, sum.toDouble(), currency, phoneNumber, email)
 
-            val selectedSchemes = mutableSetOf<PaymentCardNetwork>().apply {
+            val selectedSchemes = mutableSetOf<PaymentCardScheme>().apply {
               if (visaEnabled) add(VISA)
               if (mastercardEnabled) add(MASTERCARD)
               if (amexEnabled) add(AMERICAN_EXPRESS)
@@ -208,7 +208,7 @@ class MainActivity : ComponentActivity() {
               response.order.id,
               response.order.sessionToken,
               methods = selectedMethods.toSet(),
-              networks = selectedSchemes.toSet(),
+              schemes = selectedSchemes.toSet(),
               categories = selectedCardTypes.toSet(),
               circuit = circuit,
             )

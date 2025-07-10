@@ -12,7 +12,7 @@ import com.guavapay.paymentsdk.gateway.banking.GatewayException.ClientException.
 import com.guavapay.paymentsdk.gateway.banking.GatewayException.ClientException.NoAvailableCardSchemesException
 import com.guavapay.paymentsdk.gateway.banking.GatewayException.UnknownException
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory
-import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork
+import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme
 import com.guavapay.paymentsdk.gateway.banking.PaymentKind
 import com.guavapay.paymentsdk.gateway.banking.PaymentMethod.Card
 import com.guavapay.paymentsdk.gateway.banking.PaymentMethod.GooglePay
@@ -177,7 +177,7 @@ internal class MainVM(private val lib: LibraryUnit) : ViewModel() {
 
       val availablePaymentMethods = order.order.availablePaymentMethods.intersect(sdkSupportedMethods)
 
-      val sdkSupportedNetworks = payload.networks.map { it.name }.toSet()
+      val sdkSupportedNetworks = payload.schemes.map { it.name }.toSet()
 
       val availableCardSchemes = order.order.availableCardSchemes
         .intersectByName(sdkSupportedNetworks)
@@ -200,7 +200,7 @@ internal class MainVM(private val lib: LibraryUnit) : ViewModel() {
       val googlePayContext = if ("GOOGLE_PAY" in availablePaymentMethods && instruments.gpay != null) {
         try {
           val ctx = RemoteGooglePayContext(lib).context
-          val availableSchemes = availableCardSchemes.map(PaymentCardNetwork::name).toSet()
+          val availableSchemes = availableCardSchemes.map(PaymentCardScheme::name).toSet()
           ctx.copy(allowedCardSchemes = ctx.allowedCardSchemes.intersect(availableSchemes).toList())
         } catch (e: Exception) {
           w("Failed to load GooglePay context: $e")
@@ -826,7 +826,7 @@ internal class MainVM(private val lib: LibraryUnit) : ViewModel() {
       val orderData: OrderApi.Models.Order? = null,
       val googlePayContext: OrderApi.Models.GooglePayContext? = null,
       val availablePaymentMethods: Set<String> = emptySet(),
-      val availableCardSchemes: List<PaymentCardNetwork> = emptyList(),
+      val availableCardSchemes: List<PaymentCardScheme> = emptyList(),
       val availableCardProductCategories: Set<PaymentCardCategory> = emptySet(),
       val availablePaymentCurrencies: List<String> = emptyList(),
       val preCreateResult: OrderApi.Models.CreatePaymentResponse? = null
@@ -840,7 +840,7 @@ internal class MainVM(private val lib: LibraryUnit) : ViewModel() {
       val pay: Boolean = false,
       val paytext: Text? = null,
       val paykind: PaymentKind? = null,
-      val networks: List<PaymentCardNetwork> = emptyList(),
+      val networks: List<PaymentCardScheme> = emptyList(),
       val gpay: GPayState? = null,
       val saved: SavedState? = null,
     ) {
@@ -855,7 +855,7 @@ internal class MainVM(private val lib: LibraryUnit) : ViewModel() {
         val cvvError: Text? = null,
         val cnError: Text? = null,
 
-        val panNetwork: PaymentCardNetwork? = null,
+        val panNetwork: PaymentCardScheme? = null,
         val panCategory: PaymentCardCategory? = null,
         val panBusy: Boolean = false,
         val cvvLength: Int = 4,
