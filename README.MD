@@ -134,6 +134,14 @@ val theme = PaymentGatewayLooknfeel { delegable ->
 val payload = PaymentGatewayPayload(..., looknfeel = theme)
 ```
 
+Additionally, you can customize the appearance of the 3DS SDK that we use (the window with OTP request for transaction approval) in the same simple way by passing one parameter `threedsLooknfeel`.
+
+```kotlin
+val payload = PaymentGatewayPayload(..., threedsLooknfeel = GUiCustomization(...), looknfeel = theme)
+```
+
+If `threedsLooknfeel` is not explicitly configured, the default MyGuava color theme will be used.
+
 ### 4. Recommendations
 
 1. If you create `PaymentGatewayPayload` in Jetpack Compose, then do it in `remember(x, y) {}`.

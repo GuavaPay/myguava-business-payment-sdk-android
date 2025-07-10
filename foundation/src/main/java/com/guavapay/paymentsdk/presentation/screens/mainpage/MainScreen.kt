@@ -118,7 +118,7 @@ internal object MainScreen : Screen<HomeRoute, Actions> {
       fun launchChallenge(challengeParams: ChallengeParameters, transaction: Transaction) {
         vm.handles.prepareChallengeConfig(challengeParams)
 
-        val challengeRepositoryFactory = vm.handles.getChallengeRepositoryFactory(sdkTransactionId = transaction.sdkTransactionId, uiCustomization = GuavaUICustomizationFactory().myGuavaCustomization(activity))
+        val challengeRepositoryFactory = vm.handles.getChallengeRepositoryFactory(sdkTransactionId = transaction.sdkTransactionId, uiCustomization = lib.state.payload().threedsLooknfeel ?: GuavaUICustomizationFactory().myGuavaCustomization(activity))
         PaymentGatewayCoroutineScope().launch {
           val startChallenge = challengeRepositoryFactory.startChallenge(transaction.createInitChallengeArgs(challengeParams, 10))
           if (startChallenge is InitChallengeResult.Start) {

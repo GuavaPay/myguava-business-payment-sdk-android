@@ -120,7 +120,7 @@ composeCompiler {
 }
 
 dependencies {
-  implementation(libs.myguava.xds2.android) { isChanging = true }
+  api(libs.myguava.xds2.android) { isChanging = true }
 
   implementation(platform(libs.okhttp.bom))
   implementation(libs.okhttp.core)

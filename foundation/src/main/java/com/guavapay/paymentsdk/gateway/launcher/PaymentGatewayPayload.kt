@@ -2,14 +2,15 @@ package com.guavapay.paymentsdk.gateway.launcher
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardNetwork
+import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit
 import com.guavapay.paymentsdk.gateway.banking.PaymentKind
 import com.guavapay.paymentsdk.gateway.banking.PaymentMethod
 import com.guavapay.paymentsdk.presentation.looknfeel.PrebuiltSdkTheme
-import java.util.Locale
+import com.myguava.android.myguava3ds2.init.ui.GUiCustomization
 import java.io.Serializable
+import java.util.Locale
 
 data class PaymentGatewayPayload(
   val orderId: String,
@@ -20,6 +21,7 @@ data class PaymentGatewayPayload(
   val methods: Set<PaymentMethod> = PaymentMethod.Entries,
   val networks: Set<PaymentCardNetwork> = PaymentCardNetwork.entries.toSet(), // todo: schemes
   val categories: Set<PaymentCardCategory> = PaymentCardCategory.entries.toSet(), // todo: card product category
+  val threedsLooknfeel: GUiCustomization? = null,
   val looknfeel: PaymentGatewayLooknfeel = PaymentGatewayLooknfeel { PrebuiltSdkTheme { it() } },
 ) : Serializable {
   @Stable fun interface PaymentGatewayLooknfeel : Serializable {

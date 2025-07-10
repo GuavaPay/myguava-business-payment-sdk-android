@@ -10,6 +10,7 @@ import android.view.WindowManager.LayoutParams.FLAG_SECURE
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.content.IntentCompat.getParcelableExtra
 import androidx.core.content.IntentCompat.getSerializableExtra
 import com.guavapay.paymentsdk.LibraryState.Device
 import com.guavapay.paymentsdk.LibraryUnit.Companion.from
@@ -22,6 +23,7 @@ import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayPayload
 import com.guavapay.paymentsdk.logging.i
 import com.guavapay.paymentsdk.network.local.localipv4
 import com.guavapay.paymentsdk.platform.function.ℓ
+import com.myguava.android.myguava3ds2.init.ui.GUiCustomization
 
 internal class PaymentGatewayActivity : ComponentActivity() {
   init {
@@ -63,7 +65,9 @@ internal class PaymentGatewayActivity : ComponentActivity() {
   private fun ensureDeviceData() = Device(ip = localipv4())
 
   private fun ensurePaymentState() =
-    getSerializableExtra(intent, EXTRA_SDK_GATEWAY_PAYLOAD, PaymentGatewayPayload::class.java) ?: ℓ {
+    getSerializableExtra(intent, EXTRA_SDK_GATEWAY_PAYLOAD, PaymentGatewayPayload::class.java)?.let {
+      it.copy(threedsLooknfeel = getParcelableExtra(intent, EXTRA_SDK_GATEWAY_PART_3DS_PAYLOAD, GUiCustomization::class.java))
+    } ?: ℓ {
       finishWithError(NullPointerException("Gateway SDK payload was null when it unexpected")); null
     }
 
@@ -102,6 +106,7 @@ internal class PaymentGatewayActivity : ComponentActivity() {
 
   internal companion object {
     const val EXTRA_SDK_GATEWAY_PAYLOAD = "sdk_gateway_payload"
+    const val EXTRA_SDK_GATEWAY_PART_3DS_PAYLOAD = "sdk_gateway_part_3ds_payload"
     const val EXTRA_SDK_RESULT_CODE = "sdk_result_code"
     const val EXTRA_SDK_ERROR_THROWABLE = "sdk_error_throwable"
     const val EXTRA_SDK_SUCCESS_PAYMENT_PAYMENT = "sdk_success_payment_payment"
@@ -117,7 +122,8 @@ internal class PaymentGatewayActivity : ComponentActivity() {
     val launcher = Launcher() ; class Launcher {
       fun intent(context: Context, state: PaymentGatewayPayload) =
         Intent(context, PaymentGatewayActivity::class.java).apply {
-          putExtra(EXTRA_SDK_GATEWAY_PAYLOAD, state)
+          putExtra(EXTRA_SDK_GATEWAY_PAYLOAD, state.copy(threedsLooknfeel = null) /* exclude parcelable */)
+          putExtra(EXTRA_SDK_GATEWAY_PART_3DS_PAYLOAD, state.threedsLooknfeel)
         }
     }
   }
