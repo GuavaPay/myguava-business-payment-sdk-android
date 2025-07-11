@@ -25,7 +25,7 @@
 
 ```kotlin
 dependencies {
-  implementation("com.guavapay:myguava-business-payment-sdk-android:0.0.1")
+  implementation("com.guavapay.myguava.business:payment-sdk-android:0.0.1")
 }
 ```
 
