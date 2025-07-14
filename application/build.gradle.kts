@@ -45,7 +45,8 @@ android {
 }
 
 dependencies {
-  implementation(project(":foundation"))
+//  implementation(project(":foundation"))
+  implementation("com.guavapay.myguava.business:payment-sdk-android:0.0.1")
 
   implementation(libs.androidx.core)
   implementation(libs.androidx.lifecycle.runtime)

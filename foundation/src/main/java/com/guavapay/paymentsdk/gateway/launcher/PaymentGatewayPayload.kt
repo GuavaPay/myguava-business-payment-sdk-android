@@ -29,6 +29,7 @@ data class PaymentGatewayPayload(
   }
 
   inline fun locale() = locale!! // Never will happen. Initialized by PaymentGateway
+  inline fun threedsLooknfeel() = threedsLooknfeel!! // Never will happen. Initialized by PaymentGateway
 
   companion object
 }

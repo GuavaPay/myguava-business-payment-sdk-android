@@ -84,6 +84,8 @@ internal class MainVM(private val lib: LibraryUnit) : ViewModel() {
     val gpay = payload.methods.filterIsInstance<GooglePay>().firstOrNull()
   }
 
+  lateinit var uiCustomization: GUiCustomization
+
   init {
     resolvers()
   }
@@ -328,7 +330,7 @@ internal class MainVM(private val lib: LibraryUnit) : ViewModel() {
       application: Application = this@MainVM.lib.context.applicationContext as Application,
       isLiveMode: Boolean = false,
       sdkTransactionId: SdkTransactionId = SdkTransactionId.create(),
-      uiCustomization: GUiCustomization = GUiCustomization(),
+      uiCustomization: GUiCustomization = this@MainVM.uiCustomization,
       coroutineContext: CoroutineContext = lib.coroutine.dispatchers.common
     ) =
       InitChallengeRepositoryFactory(
@@ -422,7 +424,6 @@ internal class MainVM(private val lib: LibraryUnit) : ViewModel() {
 
         val sdkTransactionId = SdkTransactionId.create()
         val dsPublicKey = threeds.getPublicKey(directoryServerId)
-        val uiCustomization = GUiCustomization()
 
         transaction = threeds.createTransaction(
           sdkTransactionId = sdkTransactionId,

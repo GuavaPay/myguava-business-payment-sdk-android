@@ -21,7 +21,15 @@
 
 ## Installing
 
-### 1. Add dependency
+### 1. Add repository and dependency
+
+```kotlin
+repositories {
+  maven {
+    url = uri("https://maven.guavapay.com/public")
+  }
+}
+```
 
 ```kotlin
 dependencies {

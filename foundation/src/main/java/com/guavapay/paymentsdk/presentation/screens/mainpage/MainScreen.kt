@@ -1,6 +1,5 @@
 package com.guavapay.paymentsdk.presentation.screens.mainpage
 
-import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -58,6 +57,7 @@ import com.guavapay.paymentsdk.presentation.components.atomic.PrimaryButton
 import com.guavapay.paymentsdk.presentation.components.compound.CheckBoxCompound
 import com.guavapay.paymentsdk.presentation.components.compound.PaymentNetworksIcons
 import com.guavapay.paymentsdk.presentation.components.compound.TextFieldCompound
+import com.guavapay.paymentsdk.presentation.looknfeel.threeds.threedslaf
 import com.guavapay.paymentsdk.presentation.navigation.Route
 import com.guavapay.paymentsdk.presentation.navigation.Route.AbortRoute
 import com.guavapay.paymentsdk.presentation.navigation.Route.HomeRoute
@@ -82,7 +82,6 @@ import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM.Effect.HideK
 import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM.Effect.PaymentError
 import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM.Effect.RequiredContacts
 import com.guavapay.paymentsdk.rememberLibraryUnit
-import com.myguava.android.myguava3ds2.customization.GuavaUICustomizationFactory
 import com.myguava.android.myguava3ds2.transaction.ChallengeContract
 import com.myguava.android.myguava3ds2.transaction.ChallengeParameters
 import com.myguava.android.myguava3ds2.transaction.ChallengeResult
@@ -112,13 +111,16 @@ internal object MainScreen : Screen<HomeRoute, Actions> {
       }
     }
 
-    val activity = LocalActivity.current!!
+    val threedslaf = threedslaf(lib.state.payload().threedsLooknfeel())
+    LaunchedEffect(threedslaf) {
+      vm.uiCustomization = threedslaf
+    }
 
     LaunchedEffect(vm) {
       fun launchChallenge(challengeParams: ChallengeParameters, transaction: Transaction) {
         vm.handles.prepareChallengeConfig(challengeParams)
 
-        val challengeRepositoryFactory = vm.handles.getChallengeRepositoryFactory(sdkTransactionId = transaction.sdkTransactionId, uiCustomization = lib.state.payload().threedsLooknfeel ?: GuavaUICustomizationFactory().myGuavaCustomization(activity))
+        val challengeRepositoryFactory = vm.handles.getChallengeRepositoryFactory(sdkTransactionId = transaction.sdkTransactionId, uiCustomization = threedslaf)
         PaymentGatewayCoroutineScope().launch {
           val startChallenge = challengeRepositoryFactory.startChallenge(transaction.createInitChallengeArgs(challengeParams, 10))
           if (startChallenge is InitChallengeResult.Start) {

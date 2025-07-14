@@ -12,21 +12,8 @@ dependencyResolutionManagement {
     google()
     mavenCentral()
     maven {
-      url = uri("https://gitlab.guavapay.com/api/v4/projects/1110/packages/maven")
-      name = "GitLab"
-      credentials {
-        val localProperties = java.util.Properties()
-        val localPropertiesFile = File(rootDir, "local.properties")
-        if (localPropertiesFile.exists()) {
-          localPropertiesFile.inputStream().use { localProperties.load(it) }
-        }
-        username = localProperties.getProperty("gitlab.maven.username") ?: ""
-        password = localProperties.getProperty("gitlab.maven.password") ?: ""
-      }
-
-      authentication {
-        create<BasicAuthentication>("basic")
-      }
+      url = uri("https://maven.guavapay.com/public")
+      name = "GuavaPay"
     }
   }
 }

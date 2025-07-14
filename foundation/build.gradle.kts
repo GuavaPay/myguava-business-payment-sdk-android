@@ -62,6 +62,11 @@ android {
       excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
   }
+
+  publishing {
+    singleVariant("release") {}
+    /*singleVariant("debug") {}*/
+  }
 }
 
 kotlin {
@@ -171,24 +176,31 @@ publishing {
       groupId = "com.guavapay.myguava.business"
       artifactId = "payment-sdk-android"
       version = android.defaultConfig.versionName ?: "0.0.1"
-
-      artifact(tasks.register("androidSourcesJar", Jar::class) {
-        archiveClassifier.set("sources")
-        from(android.sourceSets.getByName("main").java.srcDirs)
-      })
     }
+
+    /*create<MavenPublication>("debug") {
+      afterEvaluate {
+        from(components["debug"])
+      }
+
+      groupId = "com.guavapay.myguava.business"
+      artifactId = "payment-sdk-android-debug"
+      version = "${android.defaultConfig.versionName ?: "0.0.1"}-debug"
+    }*/
   }
 
   repositories {
     maven {
-      url = uri("https://nexus.guavapay.com/repository/maven-releases/")
+      val localProperties = Properties()
+      val localPropertiesFile = File(rootDir, "local.properties")
+      if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { localProperties.load(it) }
+      }
+
+      isAllowInsecureProtocol = true
+      url = uri(localProperties.getProperty("nexus.maven.url") ?: "")
       name = "Nexus"
       credentials {
-        val localProperties = Properties()
-        val localPropertiesFile = File(rootDir, "local.properties")
-        if (localPropertiesFile.exists()) {
-          localPropertiesFile.inputStream().use { localProperties.load(it) }
-        }
         username = localProperties.getProperty("nexus.maven.username") ?: ""
         password = localProperties.getProperty("nexus.maven.password") ?: ""
       }

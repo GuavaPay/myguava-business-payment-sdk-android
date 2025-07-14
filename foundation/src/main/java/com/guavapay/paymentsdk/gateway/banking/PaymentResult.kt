@@ -9,6 +9,7 @@ import com.guavapay.paymentsdk.logging.i
 import com.guavapay.paymentsdk.network.services.OrderApi
 import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.EXTRA_SDK_ERROR_THROWABLE
 import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.EXTRA_SDK_RESULT_CODE
+import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.EXTRA_SDK_SUCCESS_PAYMENT_ORDER
 import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.EXTRA_SDK_SUCCESS_PAYMENT_PAYMENT
 import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.SDK_RESULT_CANCELED
 import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.SDK_RESULT_COMPLETED
@@ -42,12 +43,12 @@ sealed interface PaymentResult : Serializable {
         when (code) {
           SDK_RESULT_COMPLETED -> {
             val payment = getSerializableExtra(intent, EXTRA_SDK_SUCCESS_PAYMENT_PAYMENT, Payment::class.java)
-            val order = getSerializableExtra(intent, EXTRA_SDK_SUCCESS_PAYMENT_PAYMENT, Order::class.java)
+            val order = getSerializableExtra(intent, EXTRA_SDK_SUCCESS_PAYMENT_ORDER, Order::class.java)
             Completed(payment = payment, order = order)
           }
           SDK_RESULT_DECLINED -> {
             val payment = getSerializableExtra(intent, EXTRA_SDK_SUCCESS_PAYMENT_PAYMENT, Payment::class.java)
-            val order = getSerializableExtra(intent, EXTRA_SDK_SUCCESS_PAYMENT_PAYMENT, Order::class.java)
+            val order = getSerializableExtra(intent, EXTRA_SDK_SUCCESS_PAYMENT_ORDER, Order::class.java)
             Declined(payment = payment, order)
           }
           SDK_RESULT_FAILED -> Failed(getSerializableExtra(intent, EXTRA_SDK_ERROR_THROWABLE, Throwable::class.java))

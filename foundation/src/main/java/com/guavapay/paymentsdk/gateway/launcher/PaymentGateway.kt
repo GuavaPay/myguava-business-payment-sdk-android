@@ -2,8 +2,10 @@
 
 package com.guavapay.paymentsdk.gateway.launcher
 
+import android.app.Activity
 import android.content.Context
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -14,6 +16,7 @@ import androidx.compose.ui.text.intl.Locale
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
 import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity
 import com.guavapay.paymentsdk.presentation.platform.locale
+import com.myguava.android.myguava3ds2.init.ui.GUiCustomization.createWithAppTheme
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +35,8 @@ private var pendingContinuation: Continuation<PaymentResult>? = null
 
   companion object {
     operator fun invoke(context: Context, state: PaymentGatewayPayload): PaymentGateway {
-      val state = state.takeIf { it.locale == null }?.copy(locale = context.locale()) ?: state
+      val state0 = state.takeIf { it.locale == null }?.copy(locale = context.locale()) ?: state
+      val state = state0.takeIf { it.threedsLooknfeel == null }?.copy(threedsLooknfeel = createWithAppTheme(context as Activity)) ?: state0
 
       require(context is ComponentActivity) { "Context must be a ComponentActivity for registering ActivityResultLauncher" }
 
@@ -53,8 +57,10 @@ private var pendingContinuation: Continuation<PaymentResult>? = null
 }
 
 @Composable fun rememberPaymentGateway(state: PaymentGatewayPayload): PaymentGateway {
+  val activity = LocalActivity.current!!
   val context = LocalContext.current
-  val state = state.takeIf { it.locale == null }?.copy(locale = Locale.current.platformLocale) ?: state
+  val state0 = state.takeIf { it.locale == null }?.copy(locale = Locale.current.platformLocale) ?: state
+  val state = state0.takeIf { it.threedsLooknfeel == null }?.copy(threedsLooknfeel = createWithAppTheme(activity)) ?: state0
 
   val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
     pendingContinuation?.resume(PaymentResult.from(result))
