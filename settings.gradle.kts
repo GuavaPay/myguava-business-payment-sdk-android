@@ -13,7 +13,11 @@ dependencyResolutionManagement {
     mavenCentral()
     maven {
       url = uri("https://maven.guavapay.com/public")
-      name = "GuavaPay"
+      name = "GuavaPay Maven Repository"
+
+      content {
+        includeGroupAndSubgroups("com.guavapay")
+      }
     }
   }
 }

@@ -27,6 +27,11 @@
 repositories {
   maven {
     url = uri("https://maven.guavapay.com/public")
+    name = "GuavaPay Maven Repository"
+
+    content {
+      includeGroupAndSubgroups("com.guavapay")
+    }
   }
 }
 ```
