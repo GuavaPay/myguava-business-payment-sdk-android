@@ -64,6 +64,10 @@ import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme.VISA
 import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit
 import com.guavapay.paymentsdk.gateway.banking.PaymentMethod
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
+import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Cancel
+import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Error
+import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Success
+import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Unsuccess
 import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayCoroutineScope
 import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayPayload
 import com.guavapay.paymentsdk.gateway.launcher.rememberPaymentGateway
@@ -214,10 +218,10 @@ class MainActivity : ComponentActivity() {
             )
 
             paymentState = state
-          }.onFailure {
-            result = PaymentResult.Failed(it)
-            processing = false
-          }
+                  }.onFailure {
+          result = Error(it)
+          processing = false
+        }
         }
       },
       modifier = Modifier
@@ -250,7 +254,7 @@ class MainActivity : ComponentActivity() {
         runCatching {
           result = gateway?.start()
         }.onFailure {
-          result = PaymentResult.Failed(it)
+          result = Error(it)
         }
         processing = false
         paymentState = null
@@ -587,9 +591,9 @@ class MainActivity : ComponentActivity() {
   ) {
     Column(modifier = Modifier.padding(20.dp)) {
       when (result) {
-        is PaymentResult.Completed -> {
+        is Success -> {
           Text(
-            text = "✅ Payment Completed",
+            text = "✅ Payment Success",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary
           )
@@ -600,35 +604,39 @@ class MainActivity : ComponentActivity() {
           )
         }
 
-        is PaymentResult.Failed -> {
+        is Unsuccess -> {
           Text(
-            text = "❌ Payment Failed",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.error
-          )
-          Text(
-            text = result.throwable.toString(),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface
-          )
-        }
-
-        is PaymentResult.Canceled -> {
-          Text(
-            text = "🚫 Payment Canceled",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.secondary
-          )
-        }
-
-        is PaymentResult.Declined -> {
-          Text(
-            text = "🚫 Payment Declined",
+            text = "🚫 Payment Unsuccess",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.secondary
           )
           Text(
             text = "$result",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface
+          )
+        }
+
+        is Error -> {
+          Text(
+            text = "❌ Payment Error",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.error
+          )
+          Text(
+            text = result.throwable?.toString() ?: "Unknown error",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface
+          )
+        }
+        is Cancel -> {
+          Text(
+            text = "⏹️ Payment Canceled",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.outline
+          )
+          Text(
+            text = "User canceled the payment",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface
           )
