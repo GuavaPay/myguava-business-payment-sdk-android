@@ -176,7 +176,7 @@ publishing {
 
       groupId = "com.guavapay.myguava.business"
       artifactId = "payment-sdk-android"
-      version = android.defaultConfig.versionName ?: "0.0.1"
+      version = android.defaultConfig.versionName ?: "0.0.2"
     }
 
     /*create<MavenPublication>("debug") {
