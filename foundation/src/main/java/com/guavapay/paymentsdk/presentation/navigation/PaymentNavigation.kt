@@ -17,7 +17,7 @@ import androidx.navigation3.runtime.rememberSavedStateNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.ui.rememberSceneSetupNavEntryDecorator
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
-import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Failed
+import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Error
 import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.WINDOW_ANIMATION_DURATION
 import com.guavapay.paymentsdk.presentation.screens.abort.AbortScreen
 import com.guavapay.paymentsdk.presentation.screens.mainpage.MainScreen
@@ -39,7 +39,7 @@ internal object Navigation {
       modifier = Modifier,
       entryProvider = entryProvider {
         entry<Route.HomeRoute> { MainScreen(nav, it, actions = MainScreen.Actions(finish = { actions.finish(it) })) }
-        entry<Route.AbortRoute> { AbortScreen(nav, it, actions = AbortScreen.Actions(finish = { actions.finish(Failed(it)) })) }
+        entry<Route.AbortRoute> { AbortScreen(nav, it, actions = AbortScreen.Actions(finish = { actions.finish(Error(it)) })) }
       },
       transitionSpec = {
         slideInHorizontally(

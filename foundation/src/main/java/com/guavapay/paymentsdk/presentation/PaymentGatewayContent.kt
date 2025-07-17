@@ -47,7 +47,7 @@ import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
           .fillMaxSize()
           .background(MaterialTheme.colorScheme.scrim)
           .pointerInput(Unit) {
-            detectTapGestures { dismiss(PaymentResult.Canceled) }
+            detectTapGestures { dismiss(PaymentResult.Cancel) }
           }
       )
     }

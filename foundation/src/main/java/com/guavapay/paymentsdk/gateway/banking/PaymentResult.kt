@@ -13,16 +13,16 @@ import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.EXT
 import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.EXTRA_SDK_SUCCESS_PAYMENT_PAYMENT
 import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.SDK_RESULT_CANCELED
 import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.SDK_RESULT_COMPLETED
-import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.SDK_RESULT_DECLINED
+import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.SDK_RESULT_UNSUCCESS
 import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.SDK_RESULT_FAILED
 import java.io.Serializable
 import java.math.BigDecimal
 
 sealed interface PaymentResult : Serializable {
-  data class Completed(val payment: Payment? = null, val order: Order? = null) : PaymentResult
-  data class Declined(val payment: Payment? = null, val order: Order? = null) : PaymentResult
-  data object Canceled : PaymentResult { private fun readResolve(): Any = Canceled }
-  data class Failed(val throwable: Throwable? = null) : PaymentResult
+  data class Success(val payment: Payment? = null, val order: Order? = null) : PaymentResult
+  data class Unsuccess(val payment: Payment? = null, val order: Order? = null) : PaymentResult
+  data class Error(val throwable: Throwable? = null) : PaymentResult
+  data object Cancel : PaymentResult { private fun readResolve(): Any = Cancel }
 
   data class Amount(val amount: BigDecimal, val currency: String) : Serializable
   data class TransactionResult(val code: String?, val message: String?) : Serializable
@@ -44,18 +44,18 @@ sealed interface PaymentResult : Serializable {
           SDK_RESULT_COMPLETED -> {
             val payment = getSerializableExtra(intent, EXTRA_SDK_SUCCESS_PAYMENT_PAYMENT, Payment::class.java)
             val order = getSerializableExtra(intent, EXTRA_SDK_SUCCESS_PAYMENT_ORDER, Order::class.java)
-            Completed(payment = payment, order = order)
+            Success(payment = payment, order = order)
           }
-          SDK_RESULT_DECLINED -> {
+          SDK_RESULT_UNSUCCESS -> {
             val payment = getSerializableExtra(intent, EXTRA_SDK_SUCCESS_PAYMENT_PAYMENT, Payment::class.java)
             val order = getSerializableExtra(intent, EXTRA_SDK_SUCCESS_PAYMENT_ORDER, Order::class.java)
-            Declined(payment = payment, order)
+            Unsuccess(payment = payment, order = order)
           }
-          SDK_RESULT_FAILED -> Failed(getSerializableExtra(intent, EXTRA_SDK_ERROR_THROWABLE, Throwable::class.java))
-          else -> Canceled
+          SDK_RESULT_FAILED -> Error(getSerializableExtra(intent, EXTRA_SDK_ERROR_THROWABLE, Throwable::class.java))
+          else -> Cancel
         }
       } else {
-        Canceled
+        Cancel
       }
 
       return pr.also { i("Finishing SDK activity with result: $it") }

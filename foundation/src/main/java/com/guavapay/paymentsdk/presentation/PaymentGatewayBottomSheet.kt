@@ -42,11 +42,11 @@ import kotlinx.coroutines.delay
       isOverlayLayoutVisible = false
     }
 
-    BackHandler(enabled = isWindowVisible) { close(PaymentResult.Canceled) }
+    BackHandler(enabled = isWindowVisible) { close(PaymentResult.Cancel) }
 
     if (isWindowVisible) {
       Dialog(
-        onDismissRequest = { close(PaymentResult.Canceled) },
+        onDismissRequest = { close(PaymentResult.Cancel) },
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
       ) {
         val dialogWindow = getDialogWindow()

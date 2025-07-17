@@ -15,10 +15,10 @@ import androidx.core.content.IntentCompat.getSerializableExtra
 import com.guavapay.paymentsdk.LibraryState.Device
 import com.guavapay.paymentsdk.LibraryUnit.Companion.from
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
-import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Canceled
-import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Completed
-import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Declined
-import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Failed
+import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Cancel
+import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Error
+import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Success
+import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Unsuccess
 import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayPayload
 import com.guavapay.paymentsdk.logging.i
 import com.guavapay.paymentsdk.network.local.localipv4
@@ -75,20 +75,22 @@ internal class PaymentGatewayActivity : ComponentActivity() {
     i("Requested finish SDK activity with result: $result")
     Intent().apply {
       when (result) {
-        is Canceled -> putExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_CANCELED)
-        is Completed -> {
+        is Success -> {
           putExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_COMPLETED)
           result.payment?.let { putExtra(EXTRA_SDK_SUCCESS_PAYMENT_PAYMENT, it) }
           result.order?.let { putExtra(EXTRA_SDK_SUCCESS_PAYMENT_ORDER, it) }
         }
-        is Declined -> {
-          putExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_DECLINED)
+        is Unsuccess -> {
+          putExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_UNSUCCESS)
           result.payment?.let { putExtra(EXTRA_SDK_SUCCESS_PAYMENT_PAYMENT, it) }
           result.order?.let { putExtra(EXTRA_SDK_SUCCESS_PAYMENT_ORDER, it) }
         }
-        is Failed -> {
+        is Error -> {
           putExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_FAILED)
           putExtra(EXTRA_SDK_ERROR_THROWABLE, result.throwable)
+        }
+        is Cancel -> {
+          putExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_CANCELED)
         }
       }
     }.also { setResult(RESULT_OK, it) }
@@ -114,7 +116,7 @@ internal class PaymentGatewayActivity : ComponentActivity() {
 
     const val SDK_RESULT_CANCELED = 0
     const val SDK_RESULT_COMPLETED = 1
-    const val SDK_RESULT_DECLINED = 2
+    const val SDK_RESULT_UNSUCCESS = 2
     const val SDK_RESULT_FAILED = 3
 
     const val WINDOW_ANIMATION_DURATION = 400

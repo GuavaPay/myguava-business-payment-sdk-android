@@ -142,26 +142,69 @@ internal class MainVM(private val lib: LibraryUnit) : ViewModel() {
     i(order.toString())
 
     when (order.order.status) {
-      "CANCELLED" -> _effects.send(Effect.FinishPayment(PaymentResult.Canceled))
-      "EXPIRED" -> _effects.send(Effect.FinishPayment(PaymentResult.Failed(OrderStatusException.OrderExpired(order.order.status))))
-      "CREATED" -> i("Order status is CREATED, processing...")
+      "CREATED" -> {i("Order status is CREATED, processing...") }
       "PAID" -> {
         unbusy()
         i("Payment completed successfully with status PAID")
-        val result = PaymentResult.Completed(payment = order.payment?.toResult(), order = order.order.toResult())
+        val result = PaymentResult.Success(payment = order.payment?.toResult(), order = order.order.toResult())
         _effects.send(Effect.FinishPayment(result))
         return
       }
       "DECLINED" -> {
         unbusy()
         i("Payment declined with status DECLINED")
-        val result = PaymentResult.Declined(payment = order.payment?.toResult(), order = order.order.toResult())
+        val result = PaymentResult.Unsuccess(payment = order.payment?.toResult(), order = order.order.toResult())
+        _effects.send(Effect.FinishPayment(result))
+        return
+      }
+      "PARTIALLY_REFUNDED" -> {
+        unbusy()
+        i("Payment partially refunded with status PARTIALLY_REFUNDED")
+        val result = PaymentResult.Success(payment = order.payment?.toResult(), order = order.order.toResult())
+        _effects.send(Effect.FinishPayment(result))
+        return
+      }
+      "REFUNDED" -> {
+        unbusy()
+        i("Payment refunded with status REFUNDED")
+        val result = PaymentResult.Success(payment = order.payment?.toResult(), order = order.order.toResult())
+        _effects.send(Effect.FinishPayment(result))
+        return
+      }
+      "CANCELLED" -> {
+        unbusy()
+        i("Payment cancelled with status CANCELLED")
+        val result = PaymentResult.Unsuccess(payment = order.payment?.toResult(), order = order.order.toResult())
+        _effects.send(Effect.FinishPayment(result))
+        return
+      }
+      "EXPIRED" -> {
+        unbusy()
+        i("Payment expired with status EXPIRED")
+        val result = PaymentResult.Unsuccess(payment = order.payment?.toResult(), order = order.order.toResult())
+        _effects.send(Effect.FinishPayment(result))
+        return
+      }
+      "RECURRENCE_ACTIVE" -> {
+        unbusy()
+        i("Payment recurrence active with status RECURRENCE_ACTIVE")
+        val result = PaymentResult.Success(payment = order.payment?.toResult(), order = order.order.toResult())
+        _effects.send(Effect.FinishPayment(result))
+        return
+      }
+      "RECURRENCE_CLOSED" -> {
+        unbusy()
+        i("Payment recurrence closed with status RECURRENCE_CLOSED")
+        val result = PaymentResult.Success(payment = order.payment?.toResult(), order = order.order.toResult())
         _effects.send(Effect.FinishPayment(result))
         return
       }
       else -> {
+        unbusy()
         w("Unexpected order status: ${order.order.status}")
-        _effects.send(Effect.FinishPayment(PaymentResult.Failed(OrderStatusException.OrderStatusUnprocessable(order.order.status))))
+        val result = PaymentResult.Error(OrderStatusException.OrderStatusUnprocessable(order.order.status))
+        _effects.send(Effect.FinishPayment(result))
+        return
       }
     }
 

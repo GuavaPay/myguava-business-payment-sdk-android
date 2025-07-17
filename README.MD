@@ -83,10 +83,10 @@ As mentioned above, using the SDK is extremely simple, so launching is not more 
 ```kotlin
 PaymentGatewayCoroutineScope().launch {
   when (gateway.start()) {
-    PaymentResult.Completed -> x
-    PaymentResult.Declined -> x
-    PaymentResult.Canceled -> x
-    PaymentResult.Failed -> x
+    PaymentResult.Success -> x
+    PaymentResult.Unsuccess -> x
+    PaymentResult.Error -> x
+    PaymentResult.Cancel -> x
   }
 }
 ```
