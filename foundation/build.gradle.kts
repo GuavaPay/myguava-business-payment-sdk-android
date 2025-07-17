@@ -10,7 +10,7 @@ plugins {
   `maven-publish`
 }
 
-val versionName = "0.0.1"
+val versionName = "0.0.2"
 
 android {
   namespace = "com.guavapay.paymentsdk"
@@ -125,7 +125,8 @@ composeCompiler {
 }
 
 dependencies {
-  api(libs.myguava.xds2.android) { isChanging = true }
+//  api(libs.myguava.xds2.android)
+  api("com.guavapay.myguava.business:3ds2-sdk-android:0.0.1")
 
   implementation(platform(libs.okhttp.bom))
   implementation(libs.okhttp.core)

@@ -16,7 +16,7 @@ import androidx.compose.ui.text.intl.Locale
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
 import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity
 import com.guavapay.paymentsdk.presentation.platform.locale
-import com.myguava.android.myguava3ds2.init.ui.GUiCustomization.createWithAppTheme
+import com.guavapay.myguava.business.myguava3ds2.init.ui.GUiCustomization.createWithAppTheme
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

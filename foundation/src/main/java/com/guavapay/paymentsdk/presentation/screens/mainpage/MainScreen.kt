@@ -82,11 +82,11 @@ import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM.Effect.HideK
 import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM.Effect.PaymentError
 import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM.Effect.RequiredContacts
 import com.guavapay.paymentsdk.rememberLibraryUnit
-import com.myguava.android.myguava3ds2.transaction.ChallengeContract
-import com.myguava.android.myguava3ds2.transaction.ChallengeParameters
-import com.myguava.android.myguava3ds2.transaction.ChallengeResult
-import com.myguava.android.myguava3ds2.transaction.InitChallengeResult
-import com.myguava.android.myguava3ds2.transaction.Transaction
+import com.guavapay.myguava.business.myguava3ds2.transaction.ChallengeContract
+import com.guavapay.myguava.business.myguava3ds2.transaction.ChallengeParameters
+import com.guavapay.myguava.business.myguava3ds2.transaction.ChallengeResult
+import com.guavapay.myguava.business.myguava3ds2.transaction.InitChallengeResult
+import com.guavapay.myguava.business.myguava3ds2.transaction.Transaction
 import kotlinx.coroutines.launch
 import java.io.Serializable
 

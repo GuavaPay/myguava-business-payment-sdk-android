@@ -34,19 +34,19 @@ import com.guavapay.paymentsdk.platform.algorithm.luhn
 import com.guavapay.paymentsdk.platform.arrays.intersectByName
 import com.guavapay.paymentsdk.presentation.platform.Text
 import com.guavapay.paymentsdk.presentation.platform.currencify
-import com.myguava.android.myguava3ds2.init.ui.GUiCustomization
-import com.myguava.android.myguava3ds2.observability.ErrorReporter
-import com.myguava.android.myguava3ds2.security.MessageTransformerFactory
-import com.myguava.android.myguava3ds2.security.MyGuavaEphemeralKeyPairGenerator
-import com.myguava.android.myguava3ds2.service.GuavaThreeDs2ServiceImpl
-import com.myguava.android.myguava3ds2.transaction.ChallengeParameters
-import com.myguava.android.myguava3ds2.transaction.ChallengeRequestExecutor
-import com.myguava.android.myguava3ds2.transaction.InitChallengeRepositoryFactory
-import com.myguava.android.myguava3ds2.transaction.SdkTransactionId
-import com.myguava.android.myguava3ds2.transaction.Transaction
-import com.myguava.android.myguava3ds2.transactions.ChallengeRequestData
-import com.myguava.android.myguava3ds2.transactions.MessageExtension
-import com.myguava.android.myguava3ds2.views.Brand
+import com.guavapay.myguava.business.myguava3ds2.init.ui.GUiCustomization
+import com.guavapay.myguava.business.myguava3ds2.observability.ErrorReporter
+import com.guavapay.myguava.business.myguava3ds2.security.MessageTransformerFactory
+import com.guavapay.myguava.business.myguava3ds2.security.MyGuavaEphemeralKeyPairGenerator
+import com.guavapay.myguava.business.myguava3ds2.service.GuavaThreeDs2ServiceImpl
+import com.guavapay.myguava.business.myguava3ds2.transaction.ChallengeParameters
+import com.guavapay.myguava.business.myguava3ds2.transaction.ChallengeRequestExecutor
+import com.guavapay.myguava.business.myguava3ds2.transaction.InitChallengeRepositoryFactory
+import com.guavapay.myguava.business.myguava3ds2.transaction.SdkTransactionId
+import com.guavapay.myguava.business.myguava3ds2.transaction.Transaction
+import com.guavapay.myguava.business.myguava3ds2.transactions.ChallengeRequestData
+import com.guavapay.myguava.business.myguava3ds2.transactions.MessageExtension
+import com.guavapay.myguava.business.myguava3ds2.views.Brand
 import kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
@@ -142,7 +142,7 @@ internal class MainVM(private val lib: LibraryUnit) : ViewModel() {
     i(order.toString())
 
     when (order.order.status) {
-      "CANCELLED" -> _effects.send(Effect.FinishPayment(PaymentResult.Failed(OrderStatusException.OrderCancelled(order.order.status))))
+      "CANCELLED" -> _effects.send(Effect.FinishPayment(PaymentResult.Canceled))
       "EXPIRED" -> _effects.send(Effect.FinishPayment(PaymentResult.Failed(OrderStatusException.OrderExpired(order.order.status))))
       "CREATED" -> i("Order status is CREATED, processing...")
       "PAID" -> {

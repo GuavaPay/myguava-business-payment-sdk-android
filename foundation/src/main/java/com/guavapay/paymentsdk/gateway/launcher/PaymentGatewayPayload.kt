@@ -8,7 +8,7 @@ import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit
 import com.guavapay.paymentsdk.gateway.banking.PaymentKind
 import com.guavapay.paymentsdk.gateway.banking.PaymentMethod
 import com.guavapay.paymentsdk.presentation.looknfeel.PrebuiltSdkTheme
-import com.myguava.android.myguava3ds2.init.ui.GUiCustomization
+import com.guavapay.myguava.business.myguava3ds2.init.ui.GUiCustomization
 import java.io.Serializable
 import java.util.Locale
 

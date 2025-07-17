@@ -23,7 +23,7 @@ import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayPayload
 import com.guavapay.paymentsdk.logging.i
 import com.guavapay.paymentsdk.network.local.localipv4
 import com.guavapay.paymentsdk.platform.function.ℓ
-import com.myguava.android.myguava3ds2.init.ui.GUiCustomization
+import com.guavapay.myguava.business.myguava3ds2.init.ui.GUiCustomization
 
 internal class PaymentGatewayActivity : ComponentActivity() {
   init {

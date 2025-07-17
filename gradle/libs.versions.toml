@@ -10,7 +10,7 @@ androidx-startup = "1.2.0"
 androidx-espesso-core = "3.6.1"
 androidx-junit = "1.2.1"
 
-myguavaXds2Android = "1.0.0"
+myguavaXds2Android = "0.0.1"
 nav3Core = "1.0.0-alpha01"
 lifecycleViewmodelNav3 = "1.0.0-alpha01"
 
@@ -50,7 +50,7 @@ compose-ui-test = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-navigation3-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "nav3Core" }
 androidx-navigation3-ui = { group = "androidx.navigation3", name = "navigation3-ui", version.ref = "nav3Core" }
 
-myguava-xds2-android = { module = "com.myguava:myguava-3ds2-android", version.ref = "myguavaXds2Android" }
+myguava-xds2-android = { module = "com.guavapay.myguava.business:3ds2-sdk-android", version.ref = "myguavaXds2Android" }
 okhttp-bom = { group = "com.squareup.okhttp3", name = "okhttp-bom", version.ref = "okhttp" }
 okhttp-core = { group = "com.squareup.okhttp3", name = "okhttp" }
 okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor" }

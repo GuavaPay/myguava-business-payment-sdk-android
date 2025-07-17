@@ -9,17 +9,17 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import com.guavapay.paymentsdk.presentation.platform.LocalSizesProvider
 import com.guavapay.paymentsdk.presentation.platform.LocalTokensProvider
-import com.myguava.android.myguava3ds2.init.ui.GButtonCustomization
-import com.myguava.android.myguava3ds2.init.ui.GLabelCustomization
-import com.myguava.android.myguava3ds2.init.ui.GTextBoxCustomization
-import com.myguava.android.myguava3ds2.init.ui.GToolbarCustomization
-import com.myguava.android.myguava3ds2.init.ui.GUiCustomization
-import com.myguava.android.myguava3ds2.init.ui.UiCustomization.ButtonType.CANCEL
-import com.myguava.android.myguava3ds2.init.ui.UiCustomization.ButtonType.CONTINUE
-import com.myguava.android.myguava3ds2.init.ui.UiCustomization.ButtonType.NEXT
-import com.myguava.android.myguava3ds2.init.ui.UiCustomization.ButtonType.RESEND
-import com.myguava.android.myguava3ds2.init.ui.UiCustomization.ButtonType.SELECT
-import com.myguava.android.myguava3ds2.init.ui.UiCustomization.ButtonType.SUBMIT
+import com.guavapay.myguava.business.myguava3ds2.init.ui.GButtonCustomization
+import com.guavapay.myguava.business.myguava3ds2.init.ui.GLabelCustomization
+import com.guavapay.myguava.business.myguava3ds2.init.ui.GTextBoxCustomization
+import com.guavapay.myguava.business.myguava3ds2.init.ui.GToolbarCustomization
+import com.guavapay.myguava.business.myguava3ds2.init.ui.GUiCustomization
+import com.guavapay.myguava.business.myguava3ds2.init.ui.UiCustomization.ButtonType.CANCEL
+import com.guavapay.myguava.business.myguava3ds2.init.ui.UiCustomization.ButtonType.CONTINUE
+import com.guavapay.myguava.business.myguava3ds2.init.ui.UiCustomization.ButtonType.NEXT
+import com.guavapay.myguava.business.myguava3ds2.init.ui.UiCustomization.ButtonType.RESEND
+import com.guavapay.myguava.business.myguava3ds2.init.ui.UiCustomization.ButtonType.SELECT
+import com.guavapay.myguava.business.myguava3ds2.init.ui.UiCustomization.ButtonType.SUBMIT
 import java.lang.String.format
 
 @Composable internal fun threedslaf(ui: GUiCustomization): GUiCustomization {
