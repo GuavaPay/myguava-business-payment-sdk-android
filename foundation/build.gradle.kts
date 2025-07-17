@@ -10,7 +10,7 @@ plugins {
   `maven-publish`
 }
 
-val versionName = "0.0.2"
+val versionName = "0.1.0"
 
 android {
   namespace = "com.guavapay.paymentsdk"
@@ -176,7 +176,7 @@ publishing {
 
       groupId = "com.guavapay.myguava.business"
       artifactId = "payment-sdk-android"
-      version = android.defaultConfig.versionName ?: "0.0.2"
+      version = android.defaultConfig.versionName ?: "0.1.0"
     }
 
     /*create<MavenPublication>("debug") {
