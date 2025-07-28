@@ -38,7 +38,7 @@ repositories {
 
 ```kotlin
 dependencies {
-  implementation("com.guavapay.myguava.business:payment-sdk-android:0.1.0")
+  implementation("com.guavapay.myguava.business:payment-sdk-android:0.2.0")
 }
 ```
 
