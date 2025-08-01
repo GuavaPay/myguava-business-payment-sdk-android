@@ -50,6 +50,8 @@ cmake-build-*/
 # File-based project format
 *.iws
 
+gateway.yml
+
 # IntelliJ
 out/
 
@@ -245,3 +247,4 @@ google-services.json
 
 !src/**/bin/*
 *.salive
+.cursor/
