@@ -1,5 +1,5 @@
 [versions]
-agp = "8.11.0-alpha07"
+agp = "8.11.0"
 kotlin = "2.1.21"
 
 androidx-core = "1.16.0"
@@ -10,7 +10,7 @@ androidx-startup = "1.2.0"
 androidx-espesso-core = "3.6.1"
 androidx-junit = "1.2.1"
 
-myguavaXds2Android = "0.0.1"
+threeds2-sdk-android = "0.0.1"
 nav3Core = "1.0.0-alpha01"
 lifecycleViewmodelNav3 = "1.0.0-alpha01"
 
@@ -21,6 +21,8 @@ retrofit = "3.0.0"
 
 kotlinx-serialization = "1.8.1"
 
+apache-commons-validator = "1.10.0"
+
 play-services-wallet = "19.4.0"
 play-services-wallet-compose = "1.1.0"
 
@@ -28,6 +30,9 @@ junit = "4.13.2"
 material = "1.12.0"
 material3-android = "1.3.2"
 activity-ktx = "1.10.1"
+uiTooling = "1.8.3"
+desugarJdkLibs = "2.1.5"
+libphonenumber = "8.13.37"
 
 [libraries]
 androidx-core = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core" }
@@ -50,7 +55,6 @@ compose-ui-test = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-navigation3-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "nav3Core" }
 androidx-navigation3-ui = { group = "androidx.navigation3", name = "navigation3-ui", version.ref = "nav3Core" }
 
-myguava-xds2-android = { module = "com.guavapay.myguava.business:3ds2-sdk-android", version.ref = "myguavaXds2Android" }
 okhttp-bom = { group = "com.squareup.okhttp3", name = "okhttp-bom", version.ref = "okhttp" }
 okhttp-core = { group = "com.squareup.okhttp3", name = "okhttp" }
 okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor" }
@@ -59,13 +63,21 @@ retrofit-core = { group = "com.squareup.retrofit2", name = "retrofit", version.r
 retrofit-serialization = { group = "com.squareup.retrofit2", name = "converter-kotlinx-serialization", version.ref = "retrofit" }
 
 kotlinx-serialization = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+
+apache-commons-validator = { group = "commons-validator", name = "commons-validator", version.ref = "apache-commons-validator" }
 play-services-wallet = { group = "com.google.android.gms", name = "play-services-wallet", version.ref = "play-services-wallet" }
 play-services-wallet-compose = { group = "com.google.pay.button", name = "compose-pay-button", version.ref = "play-services-wallet-compose" }
+
+desugar-jdk-libs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "desugarJdkLibs" }
+
+threeds2-sdk-android = { group = "com.guavapay.myguava.business", name = "3ds2-sdk-android", version.ref = "threeds2-sdk-android" }
+libphonenumber = { group = "com.googlecode.libphonenumber", name = "libphonenumber", version.ref = "libphonenumber" }
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-material3-android = { group = "androidx.compose.material3", name = "material3-android", version.ref = "material3-android" }
 androidx-activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref = "activity-ktx" }
+androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling", version.ref = "uiTooling" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
