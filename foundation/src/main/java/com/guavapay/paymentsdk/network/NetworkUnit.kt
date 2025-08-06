@@ -1,3 +1,5 @@
+@file:Suppress("RedundantInnerClassModifier")
+
 package com.guavapay.paymentsdk.network
 
 import com.guavapay.paymentsdk.LibraryUnit
@@ -10,6 +12,7 @@ import com.guavapay.paymentsdk.network.serializers.BigDecimalSerializer
 import com.guavapay.paymentsdk.network.serializers.CurrencySerializer
 import com.guavapay.paymentsdk.network.serializers.PaymentCardCategorySerializer
 import com.guavapay.paymentsdk.network.serializers.PaymentCardSchemeSerializer
+import com.guavapay.paymentsdk.network.services.BindingsApi
 import com.guavapay.paymentsdk.network.services.OrderApi
 import com.guavapay.paymentsdk.network.ssevents.SseClient
 import com.guavapay.paymentsdk.platform.function.lazy
@@ -80,7 +83,7 @@ internal class NetworkUnit(private val lib: LibraryUnit) {
     } }
 
     val order by lazy { retrofit<OrderApi>(baseUrl, clients.authorized) }
-    /*val bindings = retrofit<BindingsApi>(baseUrl, clients.authorized)*/
+    val bindings by lazy { retrofit<BindingsApi>(baseUrl, clients.authorized) }
   }
 
   val sse = SSE(); inner class SSE() {
@@ -90,7 +93,7 @@ internal class NetworkUnit(private val lib: LibraryUnit) {
   private inline fun <reified T> retrofit(
     baseUrl: String,
     client: OkHttpClient,
-    factory: Converter.Factory = json.unspecified.asConverterFactory("application/json; charset=UTF8".toMediaType()),
+    factory: Converter.Factory = json.unspecified.asConverterFactory("application/json; charset=UTF-8".toMediaType()),
   ): T = Retrofit.Builder()
     .baseUrl(baseUrl)
     .addConverterFactory(factory)
