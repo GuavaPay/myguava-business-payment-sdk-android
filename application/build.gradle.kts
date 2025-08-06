@@ -15,9 +15,10 @@ android {
     minSdk = 21
     targetSdk = 35
     versionCode = 1
-    versionName = "1.0.0"
+    versionName = "1.7.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    base.archivesName.set("myguava-business-payment-sdk-android-v${android.defaultConfig.versionName}")
   }
 
   buildTypes {
@@ -29,13 +30,13 @@ android {
   }
 
   compileOptions {
+    isCoreLibraryDesugaringEnabled = true
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
   }
 
   kotlinOptions {
     jvmTarget = "21"
-    // todo: remove skip prerelease check flag, but need for development from EAP idea *okay.jpg*
     freeCompilerArgs = freeCompilerArgs + "-Xskip-prerelease-check"
   }
 
@@ -45,8 +46,8 @@ android {
 }
 
 dependencies {
-//  implementation(project(":foundation"))
-  implementation("com.guavapay.myguava.business:payment-sdk-android:0.1.0")
+  implementation(project(":foundation"))
+  implementation(libs.libphonenumber)
 
   implementation(libs.androidx.core)
   implementation(libs.androidx.lifecycle.runtime)
@@ -64,6 +65,8 @@ dependencies {
   implementation(platform(libs.okhttp.bom))
   implementation(libs.okhttp.core)
   implementation(libs.okhttp.logging)
+
+  coreLibraryDesugaring(libs.desugar.jdk.libs)
 
   implementation(libs.kotlinx.serialization)
 }
