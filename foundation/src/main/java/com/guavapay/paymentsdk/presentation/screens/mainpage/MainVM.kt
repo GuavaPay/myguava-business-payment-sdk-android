@@ -3,8 +3,17 @@
 package com.guavapay.paymentsdk.presentation.screens.mainpage
 
 import android.app.Application
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.i18n.phonenumbers.NumberParseException
+import com.google.i18n.phonenumbers.PhoneNumberUtil
+import com.guavapay.myguava.business.myguava3ds2.init.ui.GUiCustomization
+import com.guavapay.myguava.business.myguava3ds2.service.GuavaThreeDs2ServiceImpl
+import com.guavapay.myguava.business.myguava3ds2.transaction.ChallengeParameters
+import com.guavapay.myguava.business.myguava3ds2.transaction.InitChallengeRepositoryFactory
+import com.guavapay.myguava.business.myguava3ds2.transaction.SdkTransactionId
+import com.guavapay.myguava.business.myguava3ds2.transaction.Transaction
 import com.guavapay.paymentsdk.LibraryUnit
 import com.guavapay.paymentsdk.R
 import com.guavapay.paymentsdk.gateway.banking.GatewayException
@@ -20,37 +29,29 @@ import com.guavapay.paymentsdk.gateway.banking.PaymentMethod.SavedCard
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Companion.toResult
 import com.guavapay.paymentsdk.gateway.vendors.googlepay.GPayResult
-import com.guavapay.paymentsdk.integrations.IntegrationException.ClientError
+import com.guavapay.paymentsdk.integrations.IntegrationException
 import com.guavapay.paymentsdk.integrations.remote.RemoteCardRangeData
-import com.guavapay.paymentsdk.integrations.remote.RemoteContinuePayment
+import com.guavapay.paymentsdk.integrations.remote.RemoteDeleteBinding
+import com.guavapay.paymentsdk.integrations.remote.RemoteEditBinding
 import com.guavapay.paymentsdk.integrations.remote.RemoteExecutePayment
+import com.guavapay.paymentsdk.integrations.remote.RemoteGetBindings
 import com.guavapay.paymentsdk.integrations.remote.RemoteGooglePayContext
 import com.guavapay.paymentsdk.integrations.remote.RemoteOrderSubscription
-import com.guavapay.paymentsdk.logging.i
+import com.guavapay.paymentsdk.logging.d
+import com.guavapay.paymentsdk.logging.e
 import com.guavapay.paymentsdk.logging.w
 import com.guavapay.paymentsdk.network.services.OrderApi
 import com.guavapay.paymentsdk.network.services.OrderApi.Models.GetOrderResponse
 import com.guavapay.paymentsdk.platform.algorithm.luhn
 import com.guavapay.paymentsdk.platform.arrays.intersectByName
+import com.guavapay.paymentsdk.presentation.platform.FieldState
 import com.guavapay.paymentsdk.presentation.platform.Text
+import com.guavapay.paymentsdk.presentation.platform.collectDebounced
 import com.guavapay.paymentsdk.presentation.platform.currencify
-import com.guavapay.myguava.business.myguava3ds2.init.ui.GUiCustomization
-import com.guavapay.myguava.business.myguava3ds2.observability.ErrorReporter
-import com.guavapay.myguava.business.myguava3ds2.security.MessageTransformerFactory
-import com.guavapay.myguava.business.myguava3ds2.security.MyGuavaEphemeralKeyPairGenerator
-import com.guavapay.myguava.business.myguava3ds2.service.GuavaThreeDs2ServiceImpl
-import com.guavapay.myguava.business.myguava3ds2.transaction.ChallengeParameters
-import com.guavapay.myguava.business.myguava3ds2.transaction.ChallengeRequestExecutor
-import com.guavapay.myguava.business.myguava3ds2.transaction.InitChallengeRepositoryFactory
-import com.guavapay.myguava.business.myguava3ds2.transaction.SdkTransactionId
-import com.guavapay.myguava.business.myguava3ds2.transaction.Transaction
-import com.guavapay.myguava.business.myguava3ds2.transactions.ChallengeRequestData
-import com.guavapay.myguava.business.myguava3ds2.transactions.MessageExtension
-import com.guavapay.myguava.business.myguava3ds2.views.Brand
+import com.guavapay.paymentsdk.presentation.screens.mainpage.threeds.ThreedsInterconnect
 import kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.BUFFERED
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -69,301 +70,480 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.CoroutineContext
 
-internal class MainVM(private val lib: LibraryUnit) : ViewModel() {
+internal class MainVM(
+  private val lib: LibraryUnit,
+  private val handle: SavedStateHandle
+) : ViewModel() {
+  private val threeDs = ThreedsInterconnect(lib) { uiCustomization }
+
+  data class State(
+    val mode: Mode = Mode.NewCard,
+    val fields: Fields = Fields(),
+    val contact: Contact? = null,
+    val busy: Boolean = false,
+    val saving: Boolean = false,
+    val payText: Text? = null,
+    val payKind: PaymentKind? = null,
+    val networks: List<PaymentCardScheme> = emptyList(),
+    val gpay: GPay? = null,
+    val saved: Saved? = null,
+  ) {
+    enum class Mode { SavedCard, NewCard }
+
+    data class Fields(
+      val pan: String = "",
+      val exp: String = "",
+      val cvv: String = "",
+      val cn: String = "",
+      val ch: String = "",
+
+      val panError: Text? = null,
+      val expError: Text? = null,
+      val cvvError: Text? = null,
+      val cnError: Text? = null,
+      val chError: Text? = null,
+
+      val panNetwork: PaymentCardScheme? = null,
+      val panCategory: PaymentCardCategory? = null,
+      val panBusy: Boolean = false,
+      val cvvLength: Int = 4,
+      val cardHolderNameAvailable: Boolean = false,
+
+      val chState: FieldState = FieldState.EMPTY,
+      val chDirty: Boolean = false,
+    )
+
+    data class Contact(
+      val email: String = "",
+      val maskedEmail: String = "",
+      val phone: String = "",
+      val maskedPhone: String = "",
+      val busy: Boolean = false,
+    )
+
+    data class GPay(val available: Boolean = false)
+
+    data class Saved(
+      val available: Boolean = false,
+      val savingAvailable: Boolean = false,
+      val cards: List<SavedCard> = emptyList(),
+      val selectedCardId: String? = null,
+      val cvvInput: String = "",
+      val cvvError: Text? = null,
+      val isLoadingCards: Boolean = false
+    )
+
+    data class SavedCard(
+      val id: String,
+      val maskedPan: String,
+      val cardName: String,
+      val expiryDate: String,
+      val scheme: PaymentCardScheme,
+      val category: PaymentCardCategory,
+      val isAvailable: Boolean,
+      val cvvLength: Int
+    )
+  }
+
+  data class Internal(
+    val order: OrderApi.Models.Order? = null,
+    val gpayCtx: OrderApi.Models.GooglePayContext? = null,
+    val allowedMethods: Set<String> = emptySet(),
+    val allowedSchemes: List<PaymentCardScheme> = emptyList(),
+    val allowedCategories: Set<PaymentCardCategory> = emptySet(),
+    val allowedCurrencies: List<String> = emptyList()
+  )
+
+  sealed interface Effect {
+    data class ShowError(val message: Text) : Effect
+    data class AskContacts(val countryIso: String? = null, val callback: (email: String?, phone: String?) -> Unit = @JvmSerializableLambda { _, _ -> }) : Effect
+    data class AbortError(val throwable: GatewayException? = null) : Effect
+    data object AbortGuard : Effect
+    data class Finish(val result: PaymentResult) : Effect
+    data object FocusPan : Effect
+    data object FocusExp : Effect
+    data object FocusCvv : Effect
+    data object FocusCardholder : Effect
+    data object HideKeyboard : Effect
+    data class ConfirmDeleteCard(
+      val cardId: String,
+      val cardName: String,
+      val onDeleteConfirmed: (String) -> Unit = @JvmSerializableLambda {}
+    ) : Effect
+    data class EditCard(
+      val cardId: String,
+      val cardName: String,
+      val onEditConfirmed: (String, String) -> Unit = @JvmSerializableLambda { _, _ -> }
+    ) : Effect
+    data class Require3ds(val params: ChallengeParameters, val tx: Transaction) : Effect
+  }
+
   private val payload = lib.state.payload()
 
-  private val _state = MutableStateFlow(State()) // Todo: Use only internal state for ui.
-  val state: StateFlow<State> = _state.asStateFlow()
-
-  private val _effects = Channel<Effect>(BUFFERED, DROP_OLDEST)
-  val effects: Flow<Effect> = _effects.receiveAsFlow()
-
-  private val instruments = Instruments() ; inner class Instruments {
+  private val instruments = Instruments() ; private inner class Instruments {
     val card = payload.methods.filterIsInstance<Card>().firstOrNull()
     val saved = payload.methods.filterIsInstance<SavedCard>().firstOrNull()
     val gpay = payload.methods.filterIsInstance<GooglePay>().firstOrNull()
   }
 
+  var internal = Internal()
+
+  private val _state = MutableStateFlow(State())
+  val state: StateFlow<State> = _state.asStateFlow()
+
+  private val _effects = Channel<Effect>(BUFFERED, DROP_OLDEST)
+  val effects: Flow<Effect> = _effects.receiveAsFlow()
+
   lateinit var uiCustomization: GUiCustomization
+  private val threeds = GuavaThreeDs2ServiceImpl(lib.context, enableLogging = true, workContext = lib.coroutine.dispatchers.common)
 
-  init {
-    resolvers()
-  }
+  init { bind() }
 
-  private val threeds = GuavaThreeDs2ServiceImpl(context = lib.context, enableLogging = true, workContext = lib.coroutine.dispatchers.common)
+  private fun bind() {
+    updateFields { it.copy(cardHolderNameAvailable = instruments.card?.flags?.allowCardHolderName == true) }
 
-  private fun busy() = _state.update { state -> state.copy(external = state.external.copy(busy = true)) }
-  private fun unbusy() = _state.update { state -> state.copy(external = state.external.copy(busy = false)) }
-
-  private fun busyPan() = _state.update { state -> state.copy(external = state.external.copy(fields = state.external.fields.copy(panBusy = true))) }
-  private fun unbusyPan() = _state.update { state -> state.copy(external = state.external.copy(fields = state.external.fields.copy(panBusy = false))) }
-
-  private suspend fun fatal(throwable: GatewayException? = null) = _effects.send(Effect.AbortDueError(throwable))
-  private fun fieldError() = _state.update { state ->
-    state.copy(
-      external = state.external.copy(
-        fields = state.external.fields.copy(
-          panBusy = false,
-          panNetwork = null,
-          panError = Text.Resource(R.string.error_unable_to_identify_card),
-          cvvLength = 4
-        )
-      )
-    )
-  }
-
-  private fun resolvers() {
     RemoteOrderSubscription(lib)
       .onStart { busy() }
       .distinctUntilChanged()
-      .onEach { resolveOrder(it); unbusy() }
-      .catch { unbusy(); fatal(UnknownException(it)) }
+      .onEach { d("Order stream: status=${it.order.status} id=${it.order.id}") ; onOrder(it) ; unbusy() }
+      .catch { e("Order stream failed: ${it.message}", it) ; unbusy() ; fatal(UnknownException(it)) }
       .launchIn(viewModelScope)
 
-    _state
-      .map { it.external.fields.pan.filter(Char::isDigit) }
+    state
+      .map { it.fields.pan.filter(Char::isDigit) }
       .distinctUntilChanged()
-      .filter { digits -> digits.length in 6..19 }
-      .debounce(300)
+      .filter { it.length in PAN_MIN..PAN_MAX }
+      .debounce(PAN_DEBOUNCE_MS)
       .onEach { busyPan() }
-      .onEach(::resolvePan)
+      .onEach(::onPanRange)
       .onEach { unbusyPan() }
-      .catch { if (it is ClientError) fieldError() else fatal(UnknownException(it)) }
+      .catch {
+        if (it is IntegrationException.ClientError) {
+          w("Card range client error code=${it.code}")
+          fieldError()
+        } else {
+          e("Card range failed: ${it.message}", it)
+          fatal(UnknownException(it))
+        }
+      }
       .launchIn(viewModelScope)
+
+    collectDebounced(
+      scope = viewModelScope,
+      source = state,
+      selector = { it.fields.ch },
+      block = ::finalizeCh
+    )
   }
 
-  sealed class OrderStatusException : Exception() {
-    class OrderStatusUnprocessable(val status: String) : OrderStatusException()
-    class OrderExpired(val status: String) : OrderStatusException()
-    class OrderCancelled(val status: String) : OrderStatusException()
-  }
+  private inline fun update(block: (State) -> State) { _state.update(block) }
+  private inline fun updateExternal(block: (State) -> State) = update(block)
+  private inline fun updateFields(block: (State.Fields) -> State.Fields) =
+    update { it.copy(fields = block(it.fields)) }
 
-  private suspend fun resolveOrder(order: GetOrderResponse) {
-    i(order.toString())
+  private fun busy() = updateExternal { it.copy(busy = true) }
+  private fun unbusy() = updateExternal { it.copy(busy = false) }
+  private fun busyPan() = updateFields { it.copy(panBusy = true) }
+  private fun unbusyPan() = updateFields { it.copy(panBusy = false) }
 
-    when (order.order.status) {
-      "CREATED" -> {i("Order status is CREATED, processing...") }
-      "PAID" -> {
-        unbusy()
-        i("Payment completed successfully with status PAID")
-        val result = PaymentResult.Success(payment = order.payment?.toResult(), order = order.order.toResult())
-        _effects.send(Effect.FinishPayment(result))
-        return
-      }
-      "DECLINED" -> {
-        unbusy()
-        i("Payment declined with status DECLINED")
-        val result = PaymentResult.Unsuccess(payment = order.payment?.toResult(), order = order.order.toResult())
-        _effects.send(Effect.FinishPayment(result))
-        return
-      }
-      "PARTIALLY_REFUNDED" -> {
-        unbusy()
-        i("Payment partially refunded with status PARTIALLY_REFUNDED")
-        val result = PaymentResult.Success(payment = order.payment?.toResult(), order = order.order.toResult())
-        _effects.send(Effect.FinishPayment(result))
-        return
-      }
-      "REFUNDED" -> {
-        unbusy()
-        i("Payment refunded with status REFUNDED")
-        val result = PaymentResult.Success(payment = order.payment?.toResult(), order = order.order.toResult())
-        _effects.send(Effect.FinishPayment(result))
-        return
-      }
-      "CANCELLED" -> {
-        unbusy()
-        i("Payment cancelled with status CANCELLED")
-        val result = PaymentResult.Unsuccess(payment = order.payment?.toResult(), order = order.order.toResult())
-        _effects.send(Effect.FinishPayment(result))
-        return
-      }
-      "EXPIRED" -> {
-        unbusy()
-        i("Payment expired with status EXPIRED")
-        val result = PaymentResult.Unsuccess(payment = order.payment?.toResult(), order = order.order.toResult())
-        _effects.send(Effect.FinishPayment(result))
-        return
-      }
-      "RECURRENCE_ACTIVE" -> {
-        unbusy()
-        i("Payment recurrence active with status RECURRENCE_ACTIVE")
-        val result = PaymentResult.Success(payment = order.payment?.toResult(), order = order.order.toResult())
-        _effects.send(Effect.FinishPayment(result))
-        return
-      }
-      "RECURRENCE_CLOSED" -> {
-        unbusy()
-        i("Payment recurrence closed with status RECURRENCE_CLOSED")
-        val result = PaymentResult.Success(payment = order.payment?.toResult(), order = order.order.toResult())
-        _effects.send(Effect.FinishPayment(result))
-        return
-      }
-      else -> {
-        unbusy()
-        w("Unexpected order status: ${order.order.status}")
-        val result = PaymentResult.Error(OrderStatusException.OrderStatusUnprocessable(order.order.status))
-        _effects.send(Effect.FinishPayment(result))
-        return
+  private fun SavedStateHandle.getMode() =
+    get<String>(KEY_MODE)?.let run@{
+      return@run when (it) {
+        "SavedCard" -> State.Mode.SavedCard
+        "NewCard" -> State.Mode.NewCard
+        else -> null
       }
     }
 
-    try {
-      val formattedAmount = currencify(order.order.totalAmount.baseUnits, order.order.totalAmount.currency, payload.locale())
+  private fun SavedStateHandle.setMode(mode: State.Mode) {
+    set(KEY_MODE, when (mode) {
+      State.Mode.SavedCard -> "SavedCard"
+      State.Mode.NewCard -> "NewCard"
+    })
+  }
 
-      val sdkSupportedMethods = payload.methods.mapNotNull { method ->
-        when (method) {
-          is Card -> "PAYMENT_CARD"
-          is GooglePay -> "GOOGLE_PAY"
-          is SavedCard -> "PAYMENT_CARD_BINDING"
+  private suspend fun fatal(err: GatewayException? = null) { _effects.send(Effect.AbortError(err)) }
+
+  private fun fieldError() = updateFields {
+    it.copy(
+      panBusy = false,
+      panNetwork = null,
+      panError = Text.Resource(R.string.error_unable_to_identify_card),
+      cvvLength = FALLBACK_CVV
+    )
+  }
+
+  private suspend fun loadSavedCards(
+    order: OrderApi.Models.Order,
+    schemes: List<PaymentCardScheme>,
+    categories: Set<PaymentCardCategory>
+  ): List<State.SavedCard>? {
+    if (instruments.saved == null) return null
+    if (order.payer?.id == null) return null
+
+    return try {
+      val resp = RemoteGetBindings(lib)
+      val ui = resp.data.map { b ->
+        val scheme = PaymentCardScheme.valueOf(b.cardData.cardScheme)
+        val cat = b.product?.category?.let { PaymentCardCategory.valueOf(it) } ?: error("Unknown card category in binding id=${b.id}")
+        State.SavedCard(
+          id = b.id,
+          maskedPan = "*${b.cardData.maskedPan.takeLast(4)}",
+          cardName = b.name,
+          expiryDate = b.cardData.expiryDate,
+          scheme = scheme,
+          category = cat,
+          isAvailable = scheme in schemes && cat in categories && b.activity,
+          cvvLength = scheme.cvc
+        )
+      }
+      updateExternal { it.copy(saved = it.saved?.copy(isLoadingCards = false)) }
+      ui
+    } catch (t: Exception) {
+      e("Failed to load saved cards: ${t.message}", t)
+      updateExternal { it.copy(saved = it.saved?.copy(isLoadingCards = false)) }
+      null
+    }
+  }
+
+  private suspend fun onOrder(resp: GetOrderResponse) {
+    when (resp.order.status) {
+      S_CREATED -> Unit
+      S_PAID -> return _effects.send(Effect.Finish(PaymentResult.Success(resp.payment?.toResult(), resp.order.toResult())))
+      S_DECLINED -> return _effects.send(Effect.Finish(PaymentResult.Unsuccess(resp.payment?.toResult(), resp.order.toResult())))
+      S_PARTIALLY_REFUNDED -> return _effects.send(Effect.Finish(PaymentResult.Success(resp.payment?.toResult(), resp.order.toResult())))
+      S_REFUNDED -> return _effects.send(Effect.Finish(PaymentResult.Success(resp.payment?.toResult(), resp.order.toResult())))
+      S_CANCELLED -> return _effects.send(Effect.Finish(PaymentResult.Unsuccess(resp.payment?.toResult(), resp.order.toResult())))
+      S_EXPIRED -> return _effects.send(Effect.Finish(PaymentResult.Unsuccess(resp.payment?.toResult(), resp.order.toResult())))
+      S_RECURRENCE_ACTIVE -> return _effects.send(Effect.Finish(PaymentResult.Success(resp.payment?.toResult(), resp.order.toResult())))
+      S_RECURRENCE_CLOSED -> return _effects.send(Effect.Finish(PaymentResult.Success(resp.payment?.toResult(), resp.order.toResult())))
+      else -> return _effects.send(Effect.Finish(PaymentResult.Error(IllegalStateException("Unprocessable order status: ${resp.order.status}"))))
+    }
+
+    try {
+      val amount = currencify(resp.order.totalAmount.baseUnits, resp.order.totalAmount.currency, payload.locale())
+
+      val sdkMethods = payload.methods.mapNotNull {
+        when (it) {
+          is Card -> TYPE_CARD
+          is GooglePay -> TYPE_GPAY
+          is SavedCard -> TYPE_BINDING
           else -> null
         }
       }.toSet()
 
-      val availablePaymentMethods = order.order.availablePaymentMethods.intersect(sdkSupportedMethods)
+      val allowedMethods = resp.order.availablePaymentMethods.intersect(sdkMethods)
 
-      val sdkSupportedNetworks = payload.schemes.map { it.name }.toSet()
-
-      val availableCardSchemes = order.order.availableCardSchemes
-        .intersectByName(sdkSupportedNetworks)
-        .toList()
-
-      if (availableCardSchemes.isEmpty()) {
-        _effects.send(Effect.AbortDueError(NoAvailableCardSchemesException("No available card schemes")))
-        return
+      val sdkSchemes = payload.schemes.map { it.name }.toSet()
+      val allowedSchemes = resp.order.availableCardSchemes.intersectByName(sdkSchemes).toList().also {
+        if (it.isEmpty()) return _effects.send(Effect.AbortError(NoAvailableCardSchemesException("No available card schemes")))
       }
 
-      val sdkSupportedCardTypes = payload.categories.map { it.name }.toSet()
-
-      val availableCardProductCategories = order.order.availableCardProductCategories.intersectByName(sdkSupportedCardTypes)
-
-      if (availableCardProductCategories.isEmpty()) {
-        _effects.send(Effect.AbortDueError(NoAvailableCardProductCategoriesException("No available card product categories")))
-        return
+      val sdkCats = payload.categories.map { it.name }.toSet()
+      val allowedCats = resp.order.availableCardProductCategories.intersectByName(sdkCats).also {
+        if (it.isEmpty()) return _effects.send(Effect.AbortError(NoAvailableCardProductCategoriesException("No available card product categories")))
       }
 
-      val googlePayContext = if ("GOOGLE_PAY" in availablePaymentMethods && instruments.gpay != null) {
+      val cards = loadSavedCards(resp.order, allowedSchemes, allowedCats)
+      val hasSaved = cards?.any { it.isAvailable } == true
+
+      val gpayCtx = if (TYPE_GPAY in allowedMethods && instruments.gpay != null) {
         try {
           val ctx = RemoteGooglePayContext(lib).context
-          val availableSchemes = availableCardSchemes.map(PaymentCardScheme::name).toSet()
-          ctx.copy(allowedCardSchemes = ctx.allowedCardSchemes.intersect(availableSchemes).toList())
-        } catch (e: Exception) {
-          w("Failed to load GooglePay context: $e")
+          val names = allowedSchemes.map(PaymentCardScheme::name).toSet()
+          ctx.copy(allowedCardSchemes = ctx.allowedCardSchemes.intersect(names).toList())
+        } catch (t: Exception) {
+          w("Failed to load Google Pay context: ${t.message}")
           null
         }
-      } else {
-        null
-      }
+      } else null
 
-      val contactState = order.order.payer?.let { payer ->
-        State.ExternalState.ContactState(
-          email = payer.maskedContactEmail ?: payer.contactEmail ?: "",
-          phone = payer.maskedContactPhone?.formatted ?: payer.contactPhone?.fullNumber ?: ""
+      val contact = resp.order.payer?.let { p ->
+        State.Contact(
+          email = "",
+          phone = "",
+          maskedEmail = p.maskedContactEmail ?: p.contactEmail ?: "",
+          maskedPhone = p.maskedContactPhone?.formatted ?: p.contactPhone?.fullNumber ?: ""
         )
       }
 
-      _state.update { state ->
-        state.copy(
-          internal = state.internal.copy(
-            orderData = order.order,
-            googlePayContext = googlePayContext,
-            availablePaymentMethods = availablePaymentMethods,
-            availableCardSchemes = availableCardSchemes,
-            availableCardProductCategories = availableCardProductCategories,
-            availablePaymentCurrencies = order.order.availablePaymentCurrencies
+      internal = internal.copy(
+        order = resp.order.copy(availablePaymentMethods = resp.order.availablePaymentMethods),
+        gpayCtx = gpayCtx,
+        allowedMethods = allowedMethods,
+        allowedSchemes = allowedSchemes,
+        allowedCategories = allowedCats,
+        allowedCurrencies = resp.order.availablePaymentCurrencies
+      )
+
+      val savedMode = handle.getMode()
+      val bindingAllowed = TYPE_BINDING in allowedMethods && instruments.saved != null
+      val computedMode = if (bindingAllowed && hasSaved) State.Mode.SavedCard else State.Mode.NewCard
+      val mode = when (savedMode) {
+        State.Mode.SavedCard -> if (hasSaved) State.Mode.SavedCard else State.Mode.NewCard
+        State.Mode.NewCard -> State.Mode.NewCard
+        null -> computedMode
+      }
+      handle.setMode(mode)
+
+      update {
+        it.copy(
+          mode = mode,
+          payText = Text.Plain(amount),
+          payKind = payload.kind,
+          networks = allowedSchemes,
+          contact = contact,
+          saved = State.Saved(
+            available = bindingAllowed && !cards.isNullOrEmpty(),
+            savingAvailable = TYPE_BINDING in allowedMethods && (resp.order.payer?.id != null),
+            cards = cards ?: emptyList()
           ),
-          external = state.external.copy(
-            paytext = Text.Plain(formattedAmount),
-            paykind = payload.kind,
-            networks = availableCardSchemes,
-            contact = contactState,
-            saved = State.ExternalState.SavedState(
-              available = "PAYMENT_CARD_BINDING" in availablePaymentMethods &&
-                instruments.saved != null
-            ),
-            gpay = State.ExternalState.GPayState(
-              available = "GOOGLE_PAY" in availablePaymentMethods &&
-                instruments.gpay != null &&
-                googlePayContext != null &&
-                order.order.availablePaymentCurrencies.isNotEmpty()
-            )
+          gpay = State.GPay(
+            available = TYPE_GPAY in allowedMethods &&
+              instruments.gpay != null &&
+              gpayCtx != null &&
+              internal.allowedCurrencies.isNotEmpty()
           )
         )
       }
 
-    } catch (e: Exception) {
-      w("Error in resolveOrder: $e")
-      fatal(UnknownException(e))
+      d("Order resolved: mode=$mode, gpay=${state.value.gpay?.available}, saved=${state.value.saved?.cards?.size}")
+    } catch (t: Exception) {
+      e("Failed to resolve order: ${t.message}", t)
+      fatal(UnknownException(t))
     }
   }
 
-  private suspend fun resolvePan(pan: String) {
+  private suspend fun onPanRange(pan: String) {
     val data = RemoteCardRangeData(lib, pan)
     if (data.cardScheme != null || data.product != null) {
-      _state.update { state ->
-        state.copy(
-          external = state.external.copy(
-            fields = state.external.fields.copy(
-              panBusy = false,
-              panNetwork = data.cardScheme,
-              cvvLength = data.cardScheme!!.cvc,
-              panCategory = data.product?.category
-            )
-          )
+      updateFields {
+        it.copy(
+          panBusy = false,
+          panNetwork = data.cardScheme,
+          cvvLength = data.cardScheme!!.cvc,
+          panCategory = data.product?.category
         )
       }
     }
+  }
+
+  private fun finalizeCh(value: String) {
+    val st = when {
+      value.isBlank() -> FieldState.EMPTY
+      isChValid(value) -> FieldState.VALID
+      else -> FieldState.INVALID_VISIBLE
+    }
+    val err = if (st == FieldState.INVALID_VISIBLE) Text.Resource(R.string.error_cardholder_name_invalid_chars) else null
+    updateFields { it.copy(chState = st, chError = err, chDirty = false) }
+  }
+
+  private fun isChValid(v: String): Boolean {
+    if (v.isBlank() || v.length > 25) return false
+    if (v.first().isWhitespace() || v.last().isWhitespace()) return false
+    val parts = v.split(' ')
+    if (parts.size !in 1..2) return false
+    return parts.all { it.isNotEmpty() && it.all { ch -> ch in 'A'..'Z' } }
   }
 
   val handles = Handles() ; inner class Handles {
+    fun changeContactInfo() {
+      viewModelScope.launch {
+        _effects.send(
+          Effect.AskContacts(countryIso = internal.order?.payer?.address?.country) { email, phone ->
+            update {
+              it.copy(
+                contact = it.contact?.let { c ->
+                  c.copy(
+                    email = email ?: c.email,
+                    maskedEmail = email ?: c.maskedEmail,
+                    phone = phone ?: c.phone,
+                    maskedPhone = phone ?: c.maskedPhone
+                  )
+                }
+              )
+            }
+          }
+        )
+      }
+    }
+
     fun pay() {
       if (!isEligibleToPay) return
-
-      val state = state.value.external
-
-      val contact = state.contact
-      /*if (contact == null || contact.email.isBlank() || contact.phone.isBlank()) {
+      val contact = state.value.contact
+      if (contact == null || (contact.maskedEmail.isBlank() && contact.maskedPhone.isBlank())) {
         viewModelScope.launch {
-          _effects.send(Effect.RequiredContacts)
+          _effects.send(Effect.AskContacts(countryIso = internal.order?.payer?.address?.country) { email, phone ->
+            update {
+              it.copy(
+                contact = it.contact?.let { c ->
+                  c.copy(
+                    email = email ?: c.email,
+                    maskedEmail = email ?: c.maskedEmail,
+                    phone = phone ?: c.phone,
+                    maskedPhone = phone ?: c.maskedPhone
+                  )
+                }
+              )
+            }
+          })
         }
         return
-      }*/
+      }
+
+      viewModelScope.launch {
+        try {
+          val s = state.value
+          executeCardPayment(
+            paymentMethod = OrderApi.Models.PaymentMethod(
+              type = TYPE_CARD,
+              pan = s.fields.pan,
+              cvv2 = s.fields.cvv,
+              expiryDate = convertToYYMM(s.fields.exp),
+              cardholderName = s.fields.ch.takeIf(String::isNotBlank),
+            ),
+            bindingCreationIsNeeded = s.saving,
+            bindingName = if (s.saving && s.fields.cn.isNotBlank()) s.fields.cn else null
+          )
+        } catch (t: Exception) {
+          e("pay() failed: ${t.message}", t)
+          _effects.send(Effect.AbortError(UnknownException(t)))
+        }
+      }
+    }
+
+    fun payViaSavedCard() {
+      if (!isEligibleToPay) return
+      val s = state.value
+      val cardId = s.saved?.selectedCardId ?: return
+      val cardCvv = s.saved.cvvInput
 
       viewModelScope.launch {
         try {
           executeCardPayment(
-            pan = state.fields.pan,
-            cvv = state.fields.cvv,
-            expiryDate = convertToYYMM(state.fields.exp),
-            cardholderName = if (state.saving && state.fields.cn.isNotBlank()) state.fields.cn else null,
-            bindingCreationIsNeeded = state.saving,
-            bindingName = if (state.saving) state.fields.cn.takeIf { it.isNotBlank() } else null
+            paymentMethod = OrderApi.Models.PaymentMethod(type = TYPE_BINDING, bindingId = cardId, cvv2 = cardCvv),
+            bindingCreationIsNeeded = s.saving,
+            bindingName = if (s.saving) s.fields.cn.takeIf(String::isNotBlank) else null
           )
-          i("Card payment execute initiated, waiting for SSE status")
-        } catch (e: Exception) {
-          _effects.send(Effect.AbortDueError(UnknownException(e)))
+        } catch (t: Exception) {
+          e("payViaSavedCard() failed: ${t.message}", t)
+          _effects.send(Effect.AbortError(UnknownException(t)))
         }
       }
     }
 
     fun gpay(result: GPayResult) {
       viewModelScope.launch {
-        println(result)
         when (result) {
           is GPayResult.Success -> {
-            val external = state.value.external
             try {
-              executeGooglePayPayment(
-                paymentDataJson = result.data,
-                bindingCreationIsNeeded = external.saving,
-                bindingName = if (external.saving) external.fields.cn.takeIf { it.isNotBlank() } else null
-              )
-              i("Google Pay payment execute initiated, waiting for SSE status")
-            } catch (e: Exception) {
-              _effects.send(Effect.AbortDueError(UnknownException(e)))
+              executeGooglePayPayment(result.data, bindingCreationIsNeeded = state.value.saving)
+            } catch (t: Exception) {
+              e("gpay() failed: ${t.message}", t)
+              _effects.send(Effect.AbortError(UnknownException(t)))
             }
           }
-          is GPayResult.Failed -> _effects.send(Effect.PaymentError(Text.Plain(result.throwable?.message ?: "Google Pay error")))
+          is GPayResult.Failed -> _effects.send(Effect.ShowError(Text.Plain(result.throwable?.message ?: "Google Pay error")))
           is GPayResult.Canceled -> Unit
         }
       }
@@ -377,201 +557,59 @@ internal class MainVM(private val lib: LibraryUnit) : ViewModel() {
       coroutineContext: CoroutineContext = lib.coroutine.dispatchers.common
     ) =
       InitChallengeRepositoryFactory(
-        application,
-        isLiveMode,
-        sdkTransactionId,
-        uiCustomization,
-        rootCerts = emptyList(),
-        enableLogging = false,
-        coroutineContext
+        application, isLiveMode, sdkTransactionId, uiCustomization,
+        rootCerts = emptyList(), enableLogging = false, coroutineContext
       ).create()
 
-    fun prepareChallengeParameters(
-      threeDSRequestorAppURL: String? = null,
-      encodedParams: String
-    ): ChallengeParameters {
-      return ChallengeParameters.prepareFromPaymentApiString(
-        threeDSRequestorAppURL = threeDSRequestorAppURL,
-        text = encodedParams
-      )
-    }
-
-    suspend fun executeCardPayment(
-      pan: String,
-      cvv: String,
-      expiryDate: String,
-      cardholderName: String? = null,
-      bindingCreationIsNeeded: Boolean = false,
-      bindingName: String? = null
-    ) {
+    suspend fun executeCardPayment(paymentMethod: OrderApi.Models.PaymentMethod, bindingCreationIsNeeded: Boolean = false, bindingName: String? = null) {
       try {
         busy()
 
-        val orderData = state.value.internal.orderData ?: throw UnknownException(IllegalStateException("Order data not available"))
-        val orderId = orderData.id
+        val order = internal.order ?: throw UnknownException(IllegalStateException("Order data not available"))
+        val orderId = order.id
 
-        val paymentMethod = OrderApi.Models.PaymentMethod(
-          type = "PAYMENT_CARD",
-          pan = pan,
-          cvv2 = cvv,
-          expiryDate = expiryDate,
-          cardholderName = cardholderName
-        )
+        val contact = state.value.contact
+        val email = contact?.email?.takeIf(String::isNotBlank)
+        val phoneParsed = contact?.phone?.takeIf(String::isNotBlank)?.let(::parseContactPhone)
+        val payer = if (email == null && phoneParsed == null) null else
+          OrderApi.Models.Payer(
+            contactEmail = email,
+            contactPhone = phoneParsed?.let { OrderApi.Models.Phone(it.countryCode, it.nationalNumber, it.fullNumber) }
+          )
 
-        val executeRequest = OrderApi.Models.ExecutePaymentRequest(
+        val req = OrderApi.Models.ExecutePaymentRequest(
           paymentMethod = paymentMethod,
-          deviceData = createDeviceData(null),
+          deviceData = createDeviceData(),
           bindingCreationIsNeeded = bindingCreationIsNeeded,
           bindingName = bindingName,
-          payer = OrderApi.Models.Payer(
-            contactEmail = "personal@mairwunnx.com",
-            contactPhone = OrderApi.Models.Phone(
-              countryCode = "1",
-              nationalNumber = "9077756511".takeLast(10),
-              fullNumber = "+19077756511"
-            )
-          )
+          payer = payer
         )
 
-        val response = RemoteExecutePayment(lib, orderId, executeRequest)
-        handle3dsFlowIfRequired(response, orderId)
-
-        i("Card payment execute request completed, staying busy until SSE final status")
-      } catch (e: Exception) {
+        val resp = RemoteExecutePayment(lib, orderId, req)
+        threeDs.handleIfNeeded(resp, orderId)
+      } catch (t: Exception) {
         unbusy()
-        w("Card execute payment failed: $e")
-        throw e
+        e("executeCardPayment failed: ${t.message}", t)
+        throw t
       }
     }
 
-    private var transaction: Transaction? = null
-
-    private suspend fun handle3dsFlowIfRequired(
-      response: OrderApi.Models.ExecutePaymentResponse,
-      orderId: String
-    ) {
-      if (response.requirements?.threedsSdkCreateTransaction != null) {
-        val repository = getChallengeRepositoryFactory(coroutineContext = currentCoroutineContext())
-
-        val directoryServerId = response.requirements.threedsSdkCreateTransaction.directoryServerID!!
-        val messageVersion = response.requirements.threedsSdkCreateTransaction.messageVersion!!
-        val directoryServerName = when (directoryServerId) {
-          "A000000003" -> "visa"
-          "A000000004" -> "mastercard"
-          "A000000152" -> "diners"
-          "A000000324" -> "discover"
-          "A000000025" -> "amex"
-          else -> "visa" // Default to Visa if unknown
-        }
-        val isLiveMode = true
-
-        val sdkTransactionId = SdkTransactionId.create()
-        val dsPublicKey = threeds.getPublicKey(directoryServerId)
-
-        transaction = threeds.createTransaction(
-          sdkTransactionId = sdkTransactionId,
-          directoryServerID = directoryServerId,
-          messageVersion = messageVersion,
-          isLiveMode = isLiveMode,
-          directoryServerName = directoryServerName,
-          rootCerts = emptyList(),
-          dsPublicKey = dsPublicKey,
-          keyId = null,
-          uiCustomization = uiCustomization
-        )
-        val authRequestParams = transaction!!.createAuthenticationRequestParameters()
-        val paymentcontinue = OrderApi.Models.ContinuePaymentRequest(
-          threedsSdkData = OrderApi.Models.ThreedsSDKData(
-            name = "3dssdk",
-            version = "1.0.0",
-            packedAuthenticationData = authRequestParams.toPaymentApiString()
-          )
-        )
-
-        val response2 = RemoteContinuePayment(lib, orderId, paymentcontinue)
-        if (response2.requirements?.threedsChallenge != null) {
-          val requirements = response2.requirements
-
-          if (requirements.threedsChallenge != null) {
-            val encodedParams = requirements.threedsChallenge.packedSdkChallengeParameters
-            if (encodedParams != null) {
-              val challengeParameters = prepareChallengeParameters(
-                threeDSRequestorAppURL = "https://google.com/",
-                encodedParams = encodedParams
-              )
-              _effects.send(Effect.ChallengeRequired(challengeParameters, transaction!!))
-            } else if (requirements.threedsChallenge.url?.isNotEmpty() == true) {
-//                _state.value = PaymentState.RedirectRequired(requirements.threedsChallenge.url)
-            } else {
-//                _state.value = PaymentState.Error("Challenge required but no parameters received")
-            }
-          } else if (requirements?.payerAuthorization != null &&
-            !requirements.payerAuthorization.authorizationUrl.isNullOrEmpty()
-          ) {
-//              _state.value = PaymentState.RedirectRequired(requirements.payerAuthorization.authorizationUrl)
-          } else if (requirements?.payPalOrderApprove != null &&
-            !requirements.payPalOrderApprove.actionUrl.isNullOrEmpty()
-          ) {
-//              _state.value = PaymentState.RedirectRequired(requirements.payPalOrderApprove.actionUrl)
-          } else {
-//              _state.value = PaymentState.PaymentCompleted(response)
-          }
-        }
-      }
-    }
-
-    fun prepareChallengeConfig(challengeParameters: ChallengeParameters): ChallengeRequestExecutor.Config? {
-      return createChallengeArgs(transaction = transaction ?: return null, challengeParameters = challengeParameters).getOrNull()
-    }
-
-    fun createChallengeArgs(
-      transaction: Transaction,
-      challengeParameters: ChallengeParameters,
-      timeoutMins: Int = 5
-    ): Result<ChallengeRequestExecutor.Config> {
+    fun parseContactPhone(raw: String): ContactPhone? {
+      val trimmed = raw.replace("\\s".toRegex(), "")
+      if (trimmed.isEmpty()) return null
+      val util = PhoneNumberUtil.getInstance()
       return try {
-        val messageTransformer = MessageTransformerFactory(false).create()
-        val fakeErrorReporter = ErrorReporter { }
-
-        val keyPair = MyGuavaEphemeralKeyPairGenerator(fakeErrorReporter).generate()
-        val acsUrl = ACS_URL
-        val sdkReferenceId = challengeParameters.acsRefNumber.orEmpty()
-
-        val threeDSRequestorAppURL = THREE_DS_REQUESTOR_APP_URL
-        val creqData = ChallengeRequestData(
-          acsTransId = challengeParameters.acsTransactionId ?: "",
-          threeDsServerTransId = challengeParameters.threeDsServerTransactionId ?: "",
-          sdkTransId = transaction.sdkTransactionId,
-          messageVersion = "2.2.0",
-          messageExtensions = getMessageExtensions(challengeParameters, transaction.getBrand()),
-          threeDSRequestorAppURL = threeDSRequestorAppURL,
+        val num = util.parse(trimmed, null)
+        ContactPhone(
+          countryCode = num.countryCode.toString(),
+          nationalNumber = num.nationalNumber.toString(),
+          fullNumber = util.format(num, PhoneNumberUtil.PhoneNumberFormat.E164),
+          countryIso = util.getRegionCodeForCountryCode(num.countryCode)
         )
-
-        val creqExecutorConfig = ChallengeRequestExecutor.Config(
-          messageTransformer = messageTransformer,
-          sdkReferenceId = sdkReferenceId,
-          acsUrl = acsUrl,
-          creqData = creqData,
-          keys = ChallengeRequestExecutor.Config.Keys(
-            keyPair.private.encoded,
-            keyPair.public.encoded
-          )
-        )
-
-        Result.success(creqExecutorConfig)
-      } catch (e: Exception) {
-        Result.failure(e)
-      }
+      } catch (_: NumberParseException) { null }
     }
 
-    private fun getMessageExtensions(challengeParameters: ChallengeParameters, brand: Brand): List<MessageExtension>? {
-      return listOfNotNull(
-        MessageExtension.createBridgingExtension(
-          oobAppURLInd = "01",
-          oobContinue = null
-        )
-      ).takeIf { challengeParameters.threeDSRequestorAppURL.orEmpty().isNotEmpty() && brand == Brand.Mastercard }
-    }
+    fun prepareChallengeConfig(params: ChallengeParameters) = threeDs.prepareChallengeConfig(params)
 
     suspend fun executeGooglePayPayment(
       paymentDataJson: String,
@@ -581,356 +619,313 @@ internal class MainVM(private val lib: LibraryUnit) : ViewModel() {
       try {
         busy()
 
-        val orderData = state.value.internal.orderData ?: throw IllegalStateException("Order data not available")
-        val orderId = orderData.id
+        val order = internal.order ?: throw IllegalStateException("Order data not available")
+        val orderId = order.id
 
-        val paymentDataElement = Json.parseToJsonElement(paymentDataJson)
-
-        val paymentMethod = OrderApi.Models.PaymentMethod(
-          type = "GOOGLE_PAY",
-          paymentData = paymentDataElement
+        val pm = OrderApi.Models.PaymentMethod(
+          type = TYPE_GPAY,
+          paymentData = Json.parseToJsonElement(paymentDataJson)
         )
 
-        val contact = state.value.external.contact
-        val payer = if (contact != null && contact.email.isNotBlank() && contact.phone.isNotBlank()) {
-          OrderApi.Models.Payer(
-            contactEmail = contact.email,
-            contactPhone = parsePhoneNumber(contact.phone)
-          )
-        } else null
+        val contact = state.value.contact
+        val email = contact?.email?.takeIf(String::isNotBlank)
+        val phoneParsed = contact?.phone?.takeIf(String::isNotBlank)?.let(::parseContactPhone)
+        val payer = if (email == null && phoneParsed == null) null
+        else OrderApi.Models.Payer(
+          contactEmail = email,
+          contactPhone = phoneParsed?.let { OrderApi.Models.Phone(it.countryCode, it.nationalNumber, it.fullNumber) }
+        )
 
-        val executeRequest = OrderApi.Models.ExecutePaymentRequest(
-          paymentMethod = paymentMethod,
-          deviceData = createDeviceData(null),
+        val req = OrderApi.Models.ExecutePaymentRequest(
+          paymentMethod = pm,
+          deviceData = createDeviceData(),
           bindingCreationIsNeeded = bindingCreationIsNeeded,
           bindingName = bindingName,
           payer = payer
         )
 
-        i("Executing Google Pay payment after pre-create...")
-        val response = RemoteExecutePayment(lib, orderId, executeRequest)
-
-        handle3dsFlowIfRequired(response, orderId)
-
-        i("Google Pay payment execute request completed, staying busy until SSE final status")
-      } catch (e: Exception) {
+        val resp = RemoteExecutePayment(lib, orderId, req)
+        threeDs.handleIfNeeded(resp, orderId)
+      } catch (t: Exception) {
         unbusy()
-        w("Google Pay execute payment failed: $e")
-        throw e
+        e("executeGooglePayPayment failed: ${t.message}", t)
+        throw t
       }
     }
 
-    // TODO: REFACTOR FOR FIRST VERSION ONLY
-    private fun parsePhoneNumber(phoneNumber: String): OrderApi.Models.Phone? {
-      val digits = phoneNumber.filter { it.isDigit() }
-      return if (digits.length >= 10) {
-        OrderApi.Models.Phone(
-          countryCode = "1",
-          nationalNumber = digits.takeLast(10),
-          fullNumber = phoneNumber
-        )
-      } else null
-    }
+    private fun convertToYYMM(mmyy: String): String =
+      if (mmyy.length == 4) "${mmyy.substring(2, 4)}${mmyy.take(2)}" else mmyy
 
-    // TODO: Use kotlinx.serialization adapter module.
-    private fun convertToYYMM(mmyy: String): String {
-      return if (mmyy.length == 4) {
-        val mm = mmyy.substring(0, 2)
-        val yy = mmyy.substring(2, 4)
-        "$yy$mm"
-      } else {
-        mmyy
-      }
-    }
-
-    private fun createDeviceData(packetAuthenticationData: String?): OrderApi.Models.DeviceData {
-      val deviceData = lib.state.device
-
+    private fun createDeviceData(): OrderApi.Models.DeviceData {
+      val dev = lib.state.device
       return OrderApi.Models.DeviceData(
-        threedsSdkData = OrderApi.Models.ThreedsSDKData(name = "3dssdk", "1.0.0", packetAuthenticationData),
-        ip = deviceData.ip
+        threedsSdkData = OrderApi.Models.ThreedsSDKData(name = "3dssdk", "1.0.0", null),
+        ip = dev.ip
       )
     }
 
     fun pan(pan: String) {
-      val digitsOnly = pan.filter(Char::isDigit).take(19)
+      val digits = pan.filter(Char::isDigit).take(PAN_MAX)
+      val prev = state.value.fields.pan
+      if (prev == digits) return
 
-      val currentPan = _state.value.external.fields.pan
-      if (currentPan == digitsOnly) {
-        return
-      }
-
-      _state.update { state ->
-        state.copy(
-          external = state.external.copy(
-            fields = state.external.fields.copy(
-              pan = digitsOnly,
-              panNetwork = if (digitsOnly.length < 6) null else state.external.fields.panNetwork,
-              panBusy = digitsOnly.length in 6..19,
-              panError = null,
-              cvvLength = if (digitsOnly.length < 6) 4 else state.external.fields.cvvLength
-            )
-          )
+      updateFields {
+        it.copy(
+          pan = digits,
+          panNetwork = if (digits.length < PAN_MIN) null else it.panNetwork,
+          panBusy = digits.length in PAN_MIN..PAN_MAX,
+          panError = null,
+          cvvLength = if (digits.length < PAN_MIN) FALLBACK_CVV else it.cvvLength
         )
       }
 
-      if (digitsOnly.length == _state.value.external.fields.panNetwork?.pan) {
+      val targetLen = state.value.fields.panNetwork?.pan
+      if (targetLen != null && digits.length == targetLen) {
         viewModelScope.launch { _effects.send(Effect.FocusExp) }
       }
     }
 
     fun exp(exp: String) {
-      val oldExp = _state.value.external.fields.exp
-      val digitsOnly = exp.filter(Char::isDigit).take(4)
+      val old = state.value.fields.exp
+      val digits = exp.filter(Char::isDigit).take(4)
+      if (old == digits) return
 
-      if (oldExp == digitsOnly) {
-        return
-      }
+      updateFields { it.copy(exp = digits, expError = null) }
 
-      _state.update { state ->
-        state.copy(
-          external = state.external.copy(
-            fields = state.external.fields.copy(
-              exp = digitsOnly,
-              expError = null
-            )
-          )
-        )
-      }
-
-      if (digitsOnly.length == 4) {
-        viewModelScope.launch { _effects.send(Effect.FocusCvv) }
-      } else if (digitsOnly.isEmpty() && oldExp.isNotEmpty()) {
-        viewModelScope.launch { _effects.send(Effect.FocusPan) }
+      when {
+        digits.length == 4 -> viewModelScope.launch { _effects.send(Effect.FocusCvv) }
+        digits.isEmpty() && old.isNotEmpty() -> viewModelScope.launch { _effects.send(Effect.FocusPan) }
       }
     }
 
     fun cvv(cvv: String) {
-      val oldCvv = _state.value.external.fields.cvv
-      val maxLength = _state.value.external.fields.cvvLength
-      val digitsOnly = cvv.filter(Char::isDigit).take(maxLength)
+      val old = state.value.fields.cvv
+      val max = state.value.fields.cvvLength
+      val digits = cvv.filter(Char::isDigit).take(max)
+      if (old == digits) return
 
-      if (oldCvv == digitsOnly) {
-        return
-      }
+      updateFields { it.copy(cvv = digits, cvvError = null) }
 
-      _state.update { state ->
-        state.copy(
-          external = state.external.copy(
-            fields = state.external.fields.copy(
-              cvv = digitsOnly,
-              cvvError = null
-            )
-          )
-        )
-      }
-
-      if (digitsOnly.length == maxLength) {
-        viewModelScope.launch { _effects.send(Effect.HideKeyboard) }
-      } else if (digitsOnly.isEmpty() && oldCvv.isNotEmpty()) {
+      if (digits.length == max) {
+        val s = state.value
+        viewModelScope.launch {
+          when {
+            s.fields.cardHolderNameAvailable -> _effects.send(Effect.FocusCardholder)
+            s.saved?.savingAvailable == true -> _effects.send(Effect.HideKeyboard)
+            else -> _effects.send(Effect.HideKeyboard)
+          }
+        }
+      } else if (digits.isEmpty() && old.isNotEmpty()) {
         viewModelScope.launch { _effects.send(Effect.FocusExp) }
       }
     }
 
     fun cn(cn: String) {
-      val currentCn = _state.value.external.fields.cn
-      val cleanCn = cn.take(32).trim()
-
-      if (currentCn == cleanCn) {
-        return
-      }
-
-      _state.update { state ->
-        state.copy(
-          external = state.external.copy(
-            fields = state.external.fields.copy(
-              cn = cleanCn,
-              cnError = null
-            )
-          )
-        )
-      }
+      val clean = cn.take(200)
+      if (state.value.fields.cn == clean) return
+      updateFields { it.copy(cn = clean, cnError = null) }
     }
 
-    fun toggleSave(save: Boolean) {
-      _state.update { state ->
-        state.copy(
-          external = state.external.copy(
-            saving = save,
-          )
-        )
-      }
-    }
+    fun toggleSave(save: Boolean) = update { it.copy(saving = save) }
 
     fun panFocusLost() {
-      val digitsOnly = _state.value.external.fields.pan.filter(Char::isDigit)
-      val currentState = _state.value.external
-      val internalState = state.value.internal
-      val currentNetwork = currentState.fields.panNetwork
-      val currentCategory = currentState.fields.panCategory
+      val digits = state.value.fields.pan.filter(Char::isDigit)
+      val ext = state.value
+      val net = ext.fields.panNetwork
+      val cat = ext.fields.panCategory
 
-      if (!luhn(digitsOnly)) {
-        _state.update { state ->
-          state.copy(
-            external = state.external.copy(
-              fields = state.external.fields.copy(
-                panError = Text.Resource(R.string.error_invalid_card_number)
-              )
-            )
-          )
-        }
-      } else if ((currentNetwork != null && !currentState.networks.contains(currentNetwork)) ||
-        (currentCategory != null && !internalState.availableCardProductCategories.contains(currentCategory))
-      ) {
-        _state.update { state ->
-          state.copy(
-            external = state.external.copy(
-              fields = state.external.fields.copy(
-                panError = Text.Resource(R.string.error_payment_network_not_supported)
-              )
-            )
-          )
-        }
+      when {
+        !luhn(digits) -> updateFields { it.copy(panError = Text.Resource(R.string.error_invalid_card_number)) }
+        (net != null && net !in ext.networks) || (cat != null && cat !in internal.allowedCategories) ->
+          updateFields { it.copy(panError = Text.Resource(R.string.error_payment_network_not_supported)) }
       }
 
       cvvFocusLost()
     }
 
     fun expFocusLost() {
-      val exp = _state.value.external.fields.exp
-
+      val exp = state.value.fields.exp
       if (exp.length == 4) {
-        val month = exp.substring(0, 2).toIntOrNull()
-        val year = exp.substring(2, 4).toIntOrNull()
-
-        if (month == null || year == null || month < 1 || month > 12) {
-          _state.update { state ->
-            state.copy(
-              external = state.external.copy(
-                fields = state.external.fields.copy(
-                  expError = Text.Resource(R.string.error_invalid_exp_number)
-                )
-              )
-            )
-          }
+        val m = exp.take(2).toIntOrNull()
+        val y = exp.substring(2, 4).toIntOrNull()
+        if (m == null || y == null || m !in 1..12) {
+          updateFields { it.copy(expError = Text.Resource(R.string.error_invalid_exp_number)) }
         }
       }
     }
 
     fun cvvFocusLost() {
-      val cvv = _state.value.external.fields.cvv
-      val requiredLength = _state.value.external.fields.cvvLength
-
-      if (cvv.isNotEmpty() && cvv.length < requiredLength) {
-        _state.update { state ->
-          state.copy(external = state.external.copy(fields = state.external.fields.copy(cvvError = Text.Resource(R.string.error_invalid_cvv))))
-        }
+      val cvv = state.value.fields.cvv
+      val req = state.value.fields.cvvLength
+      if (cvv.isNotEmpty() && cvv.length < req) {
+        updateFields { it.copy(cvvError = Text.Resource(R.string.error_invalid_cvv)) }
       }
     }
 
     fun cnFocusLost() {
-      val cn = _state.value.external.fields.cn
-      if (cn.length > 200) {
-        _state.update { state ->
-          state.copy(external = state.external.copy(fields = state.external.fields.copy(cnError = Text.Resource(R.string.error_invalid_card_name))))
-        }
+      val cn = state.value.fields.cn
+      if (cn.length > 200) updateFields { it.copy(cnError = Text.Resource(R.string.error_invalid_card_name)) }
+    }
+
+    fun ch(ch: String) {
+      val value = ch.uppercase()
+      if (state.value.fields.ch == value) return
+
+      val st = when {
+        value.isBlank() -> FieldState.EMPTY
+        isChValid(value) -> FieldState.VALID
+        else -> FieldState.INVALID_SILENT
+      }
+
+      updateFields {
+        it.copy(
+          ch = value,
+          chState = st,
+          chDirty = true,
+          chError = if (st == FieldState.INVALID_SILENT) null else it.chError
+        )
       }
     }
 
-    fun unbusy() {
-      _state.update { state ->
-        state.copy(external = state.external.copy(busy = false))
+    private fun finalizeChNow(value: String) {
+      val st = when {
+        value.isBlank() -> FieldState.EMPTY
+        isChValid(value) -> FieldState.VALID
+        else -> FieldState.INVALID_VISIBLE
+      }
+      val err = if (st == FieldState.INVALID_VISIBLE) Text.Resource(R.string.error_cardholder_name_invalid_chars) else null
+      updateFields { it.copy(chState = st, chError = err, chDirty = false) }
+    }
+
+    fun chFocusLost() {
+      finalizeChNow(state.value.fields.ch)
+    }
+
+    fun unbusy() = update { it.copy(busy = false) }
+
+    fun setPaymentScreenMode(mode: State.Mode) = update { it.copy(mode = mode) }
+
+    fun selectSavedCard(id: String) = update {
+      it.copy(saved = it.saved?.copy(selectedCardId = id, cvvInput = "", cvvError = null))
+    }
+
+    fun savedCardCvv(cvv: String) {
+      val max = state.value.saved?.cards?.find { it.id == state.value.saved?.selectedCardId }?.cvvLength ?: FALLBACK_CVV
+      if (cvv.length <= max && cvv.all(Char::isDigit)) {
+        update { it.copy(saved = it.saved?.copy(cvvInput = cvv, cvvError = null)) }
+      }
+    }
+
+    fun savedCardCvvFocusLost() {
+      val s = state.value.saved ?: return
+      val card = s.cards.find { it.id == s.selectedCardId } ?: return
+      if (s.cvvInput.length != card.cvvLength) {
+        update { it.copy(saved = it.saved?.copy(cvvError = Text.Resource(R.string.error_invalid_cvv))) }
+      }
+    }
+
+    fun deleteCard(id: String) {
+      viewModelScope.launch(lib.coroutine.handlers.logcat) {
+        val card = state.value.saved?.cards?.find { it.id == id } ?: return@launch
+        val name = card.cardName + " *" + card.maskedPan.takeLast(4)
+        _effects.send(Effect.ConfirmDeleteCard(cardId = id, cardName = name, onDeleteConfirmed = ::confirmDeleteCard))
+      }
+    }
+
+    fun confirmDeleteCard(id: String) {
+      update { it.copy(saved = it.saved?.copy(isLoadingCards = true)) }
+
+      viewModelScope.launch(lib.coroutine.handlers.logcat) {
+        runCatching { RemoteDeleteBinding(lib, id) }
+          .onFailure { if (it !is IntegrationException.NoResponseError) e("Delete binding failed: ${it.message}", it) }
+
+        val cards = loadSavedCards(internal.order!!, internal.allowedSchemes, internal.allowedCategories) ?: emptyList()
+        val mode = if (cards.isEmpty()) State.Mode.NewCard else state.value.mode
+
+        handle.setMode(mode)
+        update { it.copy(mode = mode, saved = it.saved?.copy(cards = cards, isLoadingCards = false)) }
+      }
+    }
+
+    fun editCard(id: String) {
+      viewModelScope.launch(lib.coroutine.handlers.logcat) {
+        val name = state.value.saved?.cards?.find { it.id == id }?.cardName ?: return@launch
+        _effects.send(Effect.EditCard(cardId = id, cardName = name, onEditConfirmed = ::confirmEditCard))
+      }
+    }
+
+    fun confirmEditCard(id: String, name: String) {
+      update { it.copy(saved = it.saved?.copy(isLoadingCards = true)) }
+
+      viewModelScope.launch(lib.coroutine.handlers.logcat) {
+        runCatching { RemoteEditBinding(lib, id, name) }
+          .onFailure { if (it !is IntegrationException.NoResponseError) e("Edit binding failed: ${it.message}", it) }
+
+        val cards = loadSavedCards(internal.order!!, internal.allowedSchemes, internal.allowedCategories) ?: emptyList()
+        val mode = if (cards.isEmpty()) State.Mode.NewCard else state.value.mode
+
+        handle.setMode(mode)
+        update { it.copy(mode = mode, saved = it.saved?.copy(cards = cards, isLoadingCards = false)) }
       }
     }
 
     val isEligibleToPay: Boolean
-      get() = with(state.value.external) {
-        val fields = fields
-        !busy &&
-          !fields.panBusy &&
-          contact?.busy != true &&
-          fields.pan.isNotBlank() &&
-          fields.exp.isNotBlank() &&
-          fields.cvv.isNotBlank() &&
-          fields.cvv.length == fields.panNetwork?.cvc &&
-          fields.panError == null &&
-          fields.expError == null &&
-          fields.cvvError == null &&
-          (saved?.available == false || fields.cnError == null)
+      get() = with(state.value) {
+        if (mode == State.Mode.SavedCard) {
+          val s = saved ?: return@with false
+          val card = s.cards.find { it.id == s.selectedCardId }
+          !busy &&
+            !s.isLoadingCards &&
+            card != null &&
+            card.isAvailable &&
+            s.cvvInput.isNotBlank() &&
+            s.cvvInput.length == card.cvvLength &&
+            s.cvvError == null
+        } else {
+          val f = fields
+          !busy &&
+            !f.panBusy &&
+            contact?.busy != true &&
+            f.pan.isNotBlank() &&
+            f.exp.isNotBlank() &&
+            f.cvv.isNotBlank() &&
+            f.cvv.length == f.panNetwork?.cvc &&
+            f.panError == null &&
+            f.expError == null &&
+            f.cvvError == null &&
+            (!f.cardHolderNameAvailable || f.chState == FieldState.VALID) &&
+            (saved?.available == false || f.cnError == null)
+        }
       }
   }
 
-  companion object {
-    const val THREE_DS_REQUESTOR_APP_URL = "myguavaplayground://app/success" // todo: after first version, use real url
-    const val ACS_URL = "https://bank.com"
-  }
+  data class ContactPhone(
+    val countryCode: String,
+    val nationalNumber: String,
+    val fullNumber: String,
+    val countryIso: String
+  )
 
-  data class State(val internal: InternalState = InternalState(), val external: ExternalState = ExternalState()) {
-    data class InternalState(
-      val orderData: OrderApi.Models.Order? = null,
-      val googlePayContext: OrderApi.Models.GooglePayContext? = null,
-      val availablePaymentMethods: Set<String> = emptySet(),
-      val availableCardSchemes: List<PaymentCardScheme> = emptyList(),
-      val availableCardProductCategories: Set<PaymentCardCategory> = emptySet(),
-      val availablePaymentCurrencies: List<String> = emptyList(),
-      val preCreateResult: OrderApi.Models.CreatePaymentResponse? = null
-    )
+  private companion object {
+    const val KEY_MODE = "mode"
 
-    data class ExternalState(
-      val fields: FieldsState = FieldsState(),
-      val contact: ContactState? = null,
-      val busy: Boolean = false,
-      val saving: Boolean = false,
-      val pay: Boolean = false,
-      val paytext: Text? = null,
-      val paykind: PaymentKind? = null,
-      val networks: List<PaymentCardScheme> = emptyList(),
-      val gpay: GPayState? = null,
-      val saved: SavedState? = null,
-    ) {
-      data class FieldsState(
-        val pan: String = "",
-        val exp: String = "",
-        val cvv: String = "",
-        val cn: String = "",
+    const val TYPE_CARD = "PAYMENT_CARD"
+    const val TYPE_BINDING = "PAYMENT_CARD_BINDING"
+    const val TYPE_GPAY = "GOOGLE_PAY"
 
-        val panError: Text? = null,
-        val expError: Text? = null,
-        val cvvError: Text? = null,
-        val cnError: Text? = null,
+    const val S_CREATED = "CREATED"
+    const val S_PAID = "PAID"
+    const val S_DECLINED = "DECLINED"
+    const val S_PARTIALLY_REFUNDED = "PARTIALLY_REFUNDED"
+    const val S_REFUNDED = "REFUNDED"
+    const val S_CANCELLED = "CANCELLED"
+    const val S_EXPIRED = "EXPIRED"
+    const val S_RECURRENCE_ACTIVE = "RECURRENCE_ACTIVE"
+    const val S_RECURRENCE_CLOSED = "RECURRENCE_CLOSED"
 
-        val panNetwork: PaymentCardScheme? = null,
-        val panCategory: PaymentCardCategory? = null,
-        val panBusy: Boolean = false,
-        val cvvLength: Int = 4,
-      )
-
-      data class ContactState(
-        val email: String = "",
-        val phone: String = "",
-        val busy: Boolean = false,
-      )
-
-      data class GPayState(
-        val available: Boolean = false
-      )
-
-      data class SavedState(
-        val available: Boolean = false,
-      )
-    }
-  }
-
-  sealed interface Effect {
-    data class PaymentError(val message: Text) : Effect
-    data object RequiredContacts : Effect
-    data class AbortDueError(val throwable: GatewayException? = null) : Effect
-    data object AbortDueConditions : Effect
-    data class FinishPayment(val result: PaymentResult) : Effect
-    data object FocusPan : Effect
-    data object FocusExp : Effect
-    data object FocusCvv : Effect
-    data object HideKeyboard : Effect
-    data class ChallengeRequired(val challengeParameters: ChallengeParameters, val transaction: Transaction) : Effect
+    const val PAN_MIN = 6
+    const val PAN_MAX = 19
+    const val PAN_DEBOUNCE_MS = 300L
+    const val FALLBACK_CVV = 4
   }
 }
