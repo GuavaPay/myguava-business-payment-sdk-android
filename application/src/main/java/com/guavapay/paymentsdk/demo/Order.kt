@@ -12,8 +12,8 @@ import okhttp3.logging.HttpLoggingInterceptor
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
-private val client = OkHttpClient().newBuilder().callTimeout(30L, TimeUnit.SECONDS).connectTimeout(30L, TimeUnit.SECONDS).readTimeout(30L, TimeUnit.SECONDS).writeTimeout(30L, TimeUnit.SECONDS).addInterceptor(HttpLoggingInterceptor()).build()
-private val json = Json { ignoreUnknownKeys = true }
+private val client = OkHttpClient().newBuilder().callTimeout(30L, TimeUnit.SECONDS).connectTimeout(30L, TimeUnit.SECONDS).readTimeout(30L, TimeUnit.SECONDS).writeTimeout(30L, TimeUnit.SECONDS).addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }).build()
+private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
 suspend fun createOrder(baseUrl: String, token: String, amount: Double, currency: String, phoneNumber: String, email: String): OrderResponse {
   return withContext(Dispatchers.IO) {
@@ -21,24 +21,15 @@ suspend fun createOrder(baseUrl: String, token: String, amount: Double, currency
     val trimmedEmail = email.trim()
 
     val payer = if (trimmedPhone.isNotEmpty() || trimmedEmail.isNotEmpty()) {
-      PayerData(
-        contactPhone = if (trimmedPhone.isNotEmpty()) { // this shit is temporary there. (currencyly satisfy BE number acceptance criteria.)
-          val (countryCode, nationalNumber) = if (trimmedPhone.startsWith("+")) {
-            val phoneDigits = trimmedPhone.substring(1)
-            val countryCodeLength = when {
-              phoneDigits.length > 10 -> 3
-              phoneDigits.length > 7 -> 2
-              else -> 1
-            }
-            val country = phoneDigits.take(countryCodeLength)
-            val national = phoneDigits.substring(countryCodeLength)
-            country to national
-          } else {
-            "1" to trimmedPhone
-          }
+      val phone = if (trimmedPhone.isBlank()) {
+        null
+      } else {
+        val phone = Phone.parse(trimmedPhone)!!
+        ContactPhone(countryCode = phone.countryCode, nationalNumber = phone.nationalNumber, fullNumber = phone.fullNumber, country = phone.countryIso)
+      }
 
-          ContactPhone(countryCode = countryCode, nationalNumber = nationalNumber, fullNumber = trimmedPhone, country = "US")
-        } else null,
+      PayerData(
+        contactPhone = phone,
         contactEmail = trimmedEmail.takeIf { it.isNotEmpty() }
       )
     } else null
