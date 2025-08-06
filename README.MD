@@ -36,9 +36,9 @@ MyGuava Payment SDK is a comprehensive library for Android that simplifies the i
 
 ## 📸 Screenshots
 
-| Main Payment Screen                           | Personal Data Entry                              | Saved Card Payment                             |
-|-----------------------------------------------|--------------------------------------------------|------------------------------------------------|
-| <img src="./media/srcn_main.png" width="250"> | <img src="./media/srcn_contact.png" width="250"> | <img src="./media/srcn_saved.png" width="250"> |
+| Main Payment Screen                       | Personal Data Entry                          | Saved Card Payment                         |
+|-------------------------------------------|----------------------------------------------|--------------------------------------------|
+| <img src="./media/srcn_main" width="250"> | <img src="./media/srcn_contact" width="250"> | <img src="./media/srcn_saved" width="250"> |
 
 ## ⚙️ Requirements
 
