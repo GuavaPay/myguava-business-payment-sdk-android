@@ -1,155 +1,218 @@
+<p align="center">
+  <img src="media/header.png" alt="./media/header"/>
+</p>
+
+<p align="center">
+  <img alt="GitHub Tag" src="https://img.shields.io/github/v/tag/GuavaPay/myguava-business-payment-sdk-android?include_prereleases&style=for-the-badge&logoColor=BAF400&label=Version&color=BAF400">
+</p>
+
 # MyGuava Payment SDK
 
-## A payment SDK from MyGuava.
+MyGuava Payment SDK is a comprehensive library for Android that simplifies the integration of various payment methods into your application. It provides a customizable UI and handles the complexities of payment processing, allowing you to focus on your core business logic.
 
-## Requirements
+## 📖 Table of Contents
 
-- **Android API Level:** `21 (Android 5.0 Lollipop)`
-- **Compile SDK:** `36 (Android 14)`
-- **Target SDK:** `36 (Android 14)`
-- **Java Version:** `21`
-- **Kotlin Version:** `2.1.21`
+- [MyGuava Payment SDK](#myguava-payment-sdk)
+  - [📖 Table of Contents](#-table-of-contents)
+  - [✨ Features](#-features)
+  - [📸 Screenshots](#-screenshots)
+  - [⚙️ Requirements](#️-requirements)
+  - [📦 Dependencies \& Size](#-dependencies--size)
+  - [🚀 Installation](#-installation)
+    - [1. Add the repository](#1-add-the-repository)
+    - [2. Add the dependency](#2-add-the-dependency)
+  - [▶️ Usage](#️-usage)
+    - [1. Creating Configuration](#1-creating-configuration)
+    - [2. Launching the SDK](#2-launching-the-sdk)
+    - [3. Environment Selection](#3-environment-selection)
+    - [4. UI Customization](#4-ui-customization)
+  - [💡 Recommendations](#-recommendations)
 
-## Dependencies
-- **Jetpack Compose:** `BOM 2025.05.01`
-- **OkHttp:** `4.12.0`
-- **Retrofit:** `3.0.0`
-- **Kotlinx Serialization:** `1.8.1`
-- **Google Play Services Wallet:** `19.4.0`
-- **AndroidX Core:** `1.16.0`
-- **AndroidX Lifecycle:** `2.9.0`
+## ✨ Features
 
-## Installing
+- **Simple Integration:** Get started with just a few lines of code.
+- **Customizable UI:** Easily adapt the look and feel to match your app's branding using Jetpack Compose or Views.
+- **Multiple Payment Methods:** Supports payments via new cards, saved cards, and Google Pay.
 
-### 1. Add repository and dependency
+## 📸 Screenshots
+
+| Main Payment Screen                           | Personal Data Entry                              | Saved Card Payment                             |
+|-----------------------------------------------|--------------------------------------------------|------------------------------------------------|
+| <img src="./media/srcn_main.png" width="250"> | <img src="./media/srcn_contact.png" width="250"> | <img src="./media/srcn_saved.png" width="250"> |
+
+## ⚙️ Requirements
+
+- **Android API Level:** `21` (Android 5.0 Lollipop) or higher
+- **Compile SDK:** `36` or higher
+- **Java Version:** `17` or higher
+- **Kotlin Version:** `2.1.21` or higher
+
+## 📦 Dependencies & Size
+
+The SDK relies on modern Android libraries to provide a robust and seamless experience.
+
+| Dependency                      | Version          |
+|---------------------------------|------------------|
+| **Jetpack Compose**             | `BOM 2025.05.01` |
+| **OkHttp**                      | `4.12.0`         |
+| **Retrofit**                    | `3.0.0`          |
+| **Kotlinx Serialization**       | `1.8.1`          |
+| **Google Play Services Wallet** | `19.4.0`         |
+| **AndroidX Core**               | `1.16.0`         |
+| **AndroidX Lifecycle**          | `2.9.0`          |
+
+**Approximate SDK Size:** The core library adds approximately **~1.2 MB** to your app's download size.
+
+## 🚀 Installation
+
+### 1. Add the repository
+
+First, add the GuavaPay Maven repository to your project's `settings.gradle.kts` file:
 
 ```kotlin
-repositories {
-  maven {
-    url = uri("https://maven.guavapay.com/public")
-    name = "GuavaPay Maven Repository"
+dependencyResolutionManagement {
+  repositories {
+    google()
+    mavenCentral()
+    maven {
+      url = uri("https://maven.guavapay.com/public")
+      name = "GuavaPay Maven Repository"
 
-    content {
-      includeGroupAndSubgroups("com.guavapay")
+      content {
+        includeGroupAndSubgroups("com.guavapay")
+      }
     }
   }
 }
 ```
 
+### 2. Add the dependency
+
+Next, add the Payment SDK dependency to your module's `build.gradle.kts` file:
+
 ```kotlin
 dependencies {
-  implementation("com.guavapay.myguava.business:payment-sdk-android:0.2.0")
+  implementation("com.guavapay.myguava.business:payment-sdk-android:0.5.0")
 }
 ```
 
-## Usage
+## ▶️ Usage
 
 Using MyGuava Payment SDK is very simple, all you need is to call one method and create one model. UI configuration and more detailed customization will require more code, but in general, everything is very simple.
 
 ### 1. Creating Configuration
 
-First, you need to create a configuration for the payment SDK, where you describe which payment methods, card categories, payment systems, theme you would like to see, and also pass the necessary data for the SDK to work (`orderId` and `sessionToken`) that you get after creating an order.
+First, create a `PaymentGatewayPayload` with the necessary data (`orderId` and `sessionToken`) that you receive from your backend after creating an order.
 
-> **WARNING:**  
-> Register orders using your backed.
->
-> Do not pass the API key to the mobile client. Only the session token and order ID created on order registration must be passed to the mobile client.
+> **⚠️ Warning:**
+> Always register orders on your backend. Never expose your API key on the client-side. Only the `sessionToken` and `orderId` should be passed to the mobile client.
 
-
-The minimal configuration is very simple:
+A minimal configuration is very simple:
 
 ```kotlin
 val payload = PaymentGatewayPayload(order.id, order.sessionToken)
 ```
 
-Next, you need to create the gateway itself, into which we pass the payload, this is required to launch the SDK.
+Next, create the gateway instance.
 
-- If you use View in your project, not Jetpack Compose, then create the gateway like this:
+- **For View-based projects:**
 
 ```kotlin
 val gateway = PaymentGateway(activity, payload)
 ```
 
-- If you use Jetpack Compose in your project, then create the gateway like this:
+- **For Jetpack Compose projects:**
 
 ```kotlin
 val gateway = rememberPaymentGateway(payload)
 ```
 
-### 2. Launching SDK
+### 2. Launching the SDK
 
-As mentioned above, using the SDK is extremely simple, so launching is not more complex than creating a payload.
+Launching the SDK is straightforward. Use the provided `PaymentGatewayCoroutineScope` to handle the lifecycle and receive the result.
 
 ```kotlin
 PaymentGatewayCoroutineScope().launch {
-  when (gateway.start()) {
-    PaymentResult.Success -> x
-    PaymentResult.Unsuccess -> x
-    PaymentResult.Error -> x
-    PaymentResult.Cancel -> x
+  when (val result = gateway.start()) {
+    is PaymentResult.Success -> { /* Handle success */ }
+    is PaymentResult.Unsuccess -> { /* Handle unsuccess */ }
+    is PaymentResult.Error -> { /* Handle error */ }
+    is PaymentResult.Cancel -> { /* Handle cancellation */ }
   }
 }
 ```
 
-All done! This way the SDK will be launched, and the user will be able to make a payment.
+✅ All done! This way the SDK will be launched, and the user will be able to make a payment.
 
 ### 3. Environment Selection
 
-To select the environment, you can do it in two ways:
+You can select the environment in two ways:
 
-1. Specifying the environment in the manifest:
-```xml
-<meta-data
-  android:name="com.guavapay.paymentsdk.environment"
-  android:value="sandbox"/>
-```
-where:
-* `android:value="sandbox"` - sandbox environment
-* `android:value="production"` - production environment
+1.  **Via Manifest (Recommended for production builds):**
 
+    ```xml
+    <!-- AndroidManifest.xml -->
+    <meta-data
+      android:name="com.guavapay.paymentsdk.environment"
+      android:value="production" /> <!-- or "sandbox" -->
+    ```
 
-2. Passing to PaymentGatewayPayload (takes priority over manifest):
-```kotlin
-val payload = PaymentGatewayPayload(order.id, order.sessionToken, circuit = PaymentCircuit.Sandbox)
-```
+2.  **Via `PaymentGatewayPayload` (Overrides manifest):**
 
-### 3. UI Customization
-
-UI customization is very simple, since the entire SDK UI is written in Jetpack Compose, it is customized very easily. Especially if you already have Jetpack Compose in your project.
-
-For this, you need to pass the looknfeel parameter to `PaymentGatewayPayload`:
-
-```kotlin
-val payload = PaymentGatewayPayload(..., looknfeel = { delegable ->
-  MaterialTheme(...) { delegable() }
-})
-```
-
-For customizing button sizes or individual colors, you can configure this in more detail like this:
-
-By inheriting `PaymentSdkTokens` and `PaymentSdkSizes`, you can change their properties.
-
-```kotlin
-val theme = PaymentGatewayLooknfeel { delegable ->
-  CompositionLocalProvider(
-    LocalTokensProvider provides PaymentSdkTokens(),
-    LocalSizesProvider provides PaymentSdkSizes()
-  ) {
-    MaterialTheme(
-      colorScheme = colorScheme,
-      typography = CustomTypography,
-      shapes = CustomShapes,
-      content = delegable
+    ```kotlin
+    val payload = PaymentGatewayPayload(
+        orderId = order.id,
+        sessionToken = order.sessionToken,
+        circuit = PaymentCircuit.Sandbox
     )
+    ```
+
+### 4. UI Customization
+
+The SDK's UI is built with Jetpack Compose, making it highly customizable. To apply your own theme, pass a `looknfeel` lambda to the `PaymentGatewayPayload`.
+
+```kotlin
+val payload = PaymentGatewayPayload(
+  // ... other params
+  looknfeel = PaymentGatewayPayload.PaymentGatewayLooknfeel { content ->
+    YourAppTheme {
+      content()
+    }
+  }
+)
+```
+
+For more granular control over component colors and sizes, you can extend `PaymentSdkTokens` and `PaymentSdkSizes` and provide them through a `CompositionLocalProvider`.
+
+```kotlin
+val customTheme = PaymentGatewayPayload.PaymentGatewayLooknfeel { content ->
+  // You can override entire theming by extending theme from PaymentSdkTokens or PaymentSdkSizes:
+
+  val customTokens = object : PaymentSdkTokens() { /* ... override colors ... */ }
+  val customSizes = object : PaymentSdkSizes() { /* ... override sizes ... */ }
+
+  // Or override with defaults:
+
+  val customSizes = PaymentSdkSizes().button().copy(height = 54.dp /* Overrides button height */)
+  val customTokens = PaymentSdkTokens().button().copy(containerColor = Color(0xFFFF00FF) /* Overrides button background color */)
+
+  CompositionLocalProvider(
+    LocalTokensProvider provides customTokens,
+    LocalSizesProvider provides customSizes
+  ) {
+    YourAppTheme { content() }
   }
 }
 
-val payload = PaymentGatewayPayload(..., looknfeel = theme)
+val payload = PaymentGatewayPayload(
+  // ... other params
+  looknfeel = customTheme
+)
 ```
 
-### 4. Recommendations
+## 💡 Recommendations
 
-1. If you create `PaymentGatewayPayload` in Jetpack Compose, then do it in `remember(x, y) {}`.
-2. Always use the custom `PaymentGatewayCoroutineScope`
-3. In `PaymentGateway`, a reference to `ComponentActivity` should be passed, not any `Context`.
-4. Perform all checks on sandbox. Only if everything works well on it, then use the production circuit.
+1.  When creating `PaymentGatewayPayload` in Jetpack Compose, wrap it in `remember(key1, key2) { ... }` to avoid unnecessary recompositions.
+2.  Always use the provided `PaymentGatewayCoroutineScope()` to launch the payment flow.
+3.  Ensure you pass a `ComponentActivity` instance to `PaymentGateway`, not a generic `Context`.
+4.  Thoroughly test your integration in the **sandbox** environment before switching to **production**.
