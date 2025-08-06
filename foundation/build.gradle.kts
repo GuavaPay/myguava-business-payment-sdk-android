@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.util.Properties
 
@@ -10,7 +11,10 @@ plugins {
   `maven-publish`
 }
 
-val versionName = "0.1.0"
+group = providers.gradleProperty("com.guavapay.paymentsdk.group").get()
+version = providers.gradleProperty("com.guavapay.paymentsdk.version").get()
+
+android.defaultConfig.versionName = version as String
 
 android {
   namespace = "com.guavapay.paymentsdk"
@@ -22,7 +26,7 @@ android {
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     consumerProguardFiles("consumer-rules.pro")
 
-    base.archivesName.set("myguava-business-payment-sdk-android-v$versionName")
+    base.archivesName.set("myguava-business-payment-sdk-android-v$version")
   }
 
   sourceSets.named("main") {
@@ -49,6 +53,7 @@ android {
   }
 
   compileOptions {
+    isCoreLibraryDesugaringEnabled = true
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
   }
@@ -65,13 +70,12 @@ android {
 
   publishing {
     singleVariant("release") {}
-    /*singleVariant("debug") {}*/
   }
 }
 
 kotlin {
   compilerOptions {
-    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+    jvmTarget.set(JvmTarget.JVM_21)
   }
 }
 
@@ -83,14 +87,13 @@ tasks.withType<KotlinCompile>().configureEach {
           "-opt-in=kotlin.RequiresOptIn",
           "-progressive",
           "-Xlambdas=indy",
+          "-Xjvm-default=all",
           "-Xno-call-assertions",
           "-Xno-param-assertions",
           "-Xno-receiver-assertions",
           "-Xno-source-debug-extension",
-          "-Xenable-incremental-compilation",
           "-Xstring-concat=indy-with-constants",
           "-Xvalue-classes",
-          "-Xnew-inference",
           "-Xcontext-parameters",
           "-Xsuppress-warning=UNCHECKED_CAST,CONTEXT_RECEIVERS_DEPRECATED,NOTHING_TO_INLINE"
         )
@@ -102,10 +105,8 @@ tasks.withType<KotlinCompile>().configureEach {
           "-progressive",
           "-Xlambdas=indy",
           "-Xjvm-default=all",
-          "-Xenable-incremental-compilation",
           "-Xstring-concat=indy-with-constants",
           "-Xvalue-classes",
-          "-Xnew-inference",
           "-Xcontext-parameters",
           "-Xsuppress-warning=UNCHECKED_CAST,CONTEXT_RECEIVERS_DEPRECATED,NOTHING_TO_INLINE"
         )
@@ -114,19 +115,26 @@ tasks.withType<KotlinCompile>().configureEach {
   }
 }
 
-composeCompiler {
-  if (gradle.startParameter.taskNames.any { it.contains("release", ignoreCase = true) }) {
-    includeSourceInformation.set(false)
-    includeTraceMarkers.set(false)
-  } else {
-    includeSourceInformation.set(true)
-    includeTraceMarkers.set(true)
+androidComponents {
+  onVariants { variant ->
+    if (variant.buildType == "release") {
+      composeCompiler {
+        includeSourceInformation.set(false)
+        includeTraceMarkers.set(false)
+      }
+    } else {
+      composeCompiler {
+        includeSourceInformation.set(true)
+        includeTraceMarkers.set(true)
+      }
+    }
   }
 }
 
 dependencies {
-//  api(libs.myguava.xds2.android)
-  api("com.guavapay.myguava.business:3ds2-sdk-android:0.0.1")
+  api(libs.threeds2.sdk.android)
+  implementation(libs.libphonenumber)
+  implementation(libs.apache.commons.validator)
 
   implementation(platform(libs.okhttp.bom))
   implementation(libs.okhttp.core)
@@ -157,6 +165,9 @@ dependencies {
   implementation(libs.compose.ui.tooling.preview)
   implementation(libs.material)
   implementation(libs.androidx.material3.android)
+  implementation(libs.androidx.ui.tooling)
+
+  coreLibraryDesugaring(libs.desugar.jdk.libs)
 
   debugImplementation(libs.compose.ui.tooling)
   debugImplementation(libs.compose.ui.test)
@@ -174,20 +185,10 @@ publishing {
         from(components["release"])
       }
 
-      groupId = "com.guavapay.myguava.business"
+      groupId = project.group.toString()
       artifactId = "payment-sdk-android"
-      version = android.defaultConfig.versionName ?: "0.1.0"
+      version = project.version.toString()
     }
-
-    /*create<MavenPublication>("debug") {
-      afterEvaluate {
-        from(components["debug"])
-      }
-
-      groupId = "com.guavapay.myguava.business"
-      artifactId = "payment-sdk-android-debug"
-      version = "${android.defaultConfig.versionName ?: "0.0.1"}-debug"
-    }*/
   }
 
   repositories {
