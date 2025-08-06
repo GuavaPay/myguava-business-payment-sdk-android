@@ -4,12 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -25,7 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import com.guavapay.paymentsdk.R
-import com.guavapay.paymentsdk.presentation.components.atomic.PrimaryButton
+import com.guavapay.paymentsdk.presentation.components.atoms.Button
 import com.guavapay.paymentsdk.presentation.navigation.Route
 import com.guavapay.paymentsdk.presentation.navigation.Route.AbortRoute
 import com.guavapay.paymentsdk.presentation.navigation.rememberNavBackStack
@@ -35,15 +33,17 @@ import com.guavapay.paymentsdk.presentation.screens.abort.AbortScreen.Actions
 import java.io.Serializable
 
 internal object AbortScreen : Screen<AbortRoute, Actions> {
-  data class Actions(val finish: (Throwable?) -> Unit = {}) : Serializable
+  data class Actions(val finish: (Throwable?) -> Unit = @JvmSerializableLambda {}) : Serializable
 
   @Composable override operator fun invoke(nav: SnapshotStateList<Route>, route: AbortRoute, actions: Actions) {
+    val scroll = rememberScrollState()
+
     Column(
       modifier = Modifier
         .fillMaxWidth()
-        .verticalScroll(rememberScrollState())
-        .padding(24.dp)
-        .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+        .verticalScroll(scroll)
+        .padding(16.dp)
+        .navigationBarsPadding()
         .imePadding()
     ) {
       Box(
@@ -79,9 +79,10 @@ internal object AbortScreen : Screen<AbortRoute, Actions> {
 
       Spacer(modifier = Modifier.height(16.dp))
 
-      PrimaryButton(
+      Button(
         onClick = { actions.finish(route.throwable) },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        style = Button.primary()
       ) {
         Text(
           text = stringResource(R.string.abort_finish),
