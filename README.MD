@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <img alt="GitHub Tag" src="https://img.shields.io/github/v/tag/GuavaPay/myguava-business-payment-sdk-android?include_prereleases&style=for-the-badge&logoColor=BAF400&label=Version&color=BAF400" style="margin-right: 24px;">
-  <img alt="GitHub Release Date" src="https://img.shields.io/github/release-date-pre/GuavaPay/myguava-business-payment-sdk-android?display_date=published_at&style=for-the-badge&label=Last%20release%20date&color=BAF400">
+  <img alt="Version" src="https://img.shields.io/github/v/tag/GuavaPay/myguava-business-payment-sdk-android?include_prereleases&style=for-the-badge&logoColor=BAF400&label=Version&color=BAF400" style="margin-right: 24px;">
+  <img alt="Last Release Date" src="https://img.shields.io/github/release-date-pre/GuavaPay/myguava-business-payment-sdk-android?display_date=published_at&style=for-the-badge&label=Last%20release%20date&color=BAF400">
 </p>
 
 # MyGuava Payment SDK
