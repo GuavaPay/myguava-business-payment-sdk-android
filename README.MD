@@ -96,6 +96,25 @@ dependencies {
 }
 ```
 
+> **⚠️ Attention**
+> Also required desugaring library from Google. Add them into dependencies block and enable desugaring core library:
+
+```kotlin
+android {
+  ... other properties
+
+  compileOptions {
+    isCoreLibraryDesugaringEnabled = true
+  }
+
+  ... other properties
+}
+
+dependencies {
+  coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+}
+```
+
 ## ▶️ Usage
 
 Using MyGuava Payment SDK is very simple, all you need is to call one method and create one model. UI configuration and more detailed customization will require more code, but in general, everything is very simple.
