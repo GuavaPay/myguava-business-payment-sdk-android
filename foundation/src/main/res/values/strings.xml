@@ -16,18 +16,65 @@
   <string name="initial_newcard_expiration_placeholder">MM/YY</string>
   <string name="initial_newcard_cvv">Security code</string>
   <string name="initial_newcard_cvv_placeholder">CVV</string>
+  <string name="initial_newcard_cardholder_name">Cardholder name</string>
+  <string name="initial_newcard_cardholder_name_placeholder">Name on card</string>
   <string name="initial_newcard_save">Save the card for future payments</string>
   <string name="initial_newcard_name">Card name</string>
   <string name="initial_newcard_name_placeholder">Name your card</string>
+
+  <string name="mode_selector_saved_cards">Saved cards</string>
+  <string name="mode_selector_new_card">New card</string>
 
   <string name="error_unable_to_identify_card">Unable to identify card</string>
   <string name="error_invalid_card_number">Invalid card number</string>
   <string name="error_invalid_exp_number">Invalid expiration date</string>
   <string name="error_invalid_cvv">Invalid CVV</string>
   <string name="error_invalid_card_name">Invalid card name</string>
+  <string name="error_invalid_cardholder_name">Invalid cardholder name</string>
+  <string name="error_cardholder_name_invalid_chars">Cardholder name can only contain latin letters and spaces</string>
+  <string name="error_card_holder_name_first_char">Card name must start with a latin letter</string>
+  <string name="error_card_holder_name_invalid_chars">Card name can only contain uppercase latin letters, numbers, $, ), (, -, . and space</string>
   <string name="error_payment_network_not_supported">Payment network not supported</string>
 
   <string name="abort_title">Can\'t continue flow</string>
   <string name="abort_description">Please try again later or contact support.</string>
   <string name="abort_finish">Close</string>
+
+  <string name="remove_card_title">Are you sure you want to delete the card?</string>
+  <string name="remove_card_description">Are you sure you want to delete &lt;b&gt;%s&lt;/b&gt;? This action cannot be undone.</string>
+  <string name="remove_card_delete">Delete</string>
+  <string name="remove_card_cancel">Cancel</string>
+
+  <string name="rename_saved_card">Rename card</string>
+  <string name="card_name">Card name</string>
+  <string name="save">Save</string>
+  <string name="cancel">Cancel</string>
+
+  <string name="card_name_error">Card name cannot be empty</string>
+  <string name="cancel_title">Are you sure you want to cancel the payment?</string>
+  <string name="cancel_description">Closing now will cancel your payment and discard entered data. Proceed?</string>
+  <string name="continue_payment">Continue Payment</string>
+  <string name="cancel_payment">Cancel Payment</string>
+
+  <string name="contact_info_title">Your contact information</string>
+  <string name="contact_info_change">Change info</string>
+  <string name="contact_info_email_label">Email:</string>
+  <string name="contact_info_phone_label">Phone number:</string>
+
+  <string name="select_country">Select country</string>
+  <string name="search_country_placeholder">Search for a country</string>
+  <string name="nothing_found">Nothing found</string>
+  <string name="back">Back</string>
+
+  <string name="your_contact_information">Your contact information</string>
+  <string name="contact_description">To proceed, please provide either your phone number or your email address.</string>
+  <string name="email">Email</string>
+  <string name="enter_your_email">Enter your email</string>
+  <string name="phone_number">Phone number</string>
+  <string name="phone_number_placeholder">Phone number</string>
+  <string name="continue_text">Continue</string>
+  <string name="error_invalid_email">Invalid email address</string>
+  <string name="error_invalid_phone_number">Invalid phone number</string>
+
+  <string name="saved_card_not_available">Not available for this payment</string>
 </resources>
