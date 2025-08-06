@@ -99,8 +99,8 @@ class MainActivity : ComponentActivity() {
   var sum by rememberSaveable { mutableStateOf("100.25") }
   var currency by rememberSaveable { mutableStateOf("GBP") }
 
-  var phoneNumber by rememberSaveable { mutableStateOf("") }
-  var email by rememberSaveable { mutableStateOf("") }
+  var phoneNumber by rememberSaveable { mutableStateOf("+442045773333") }
+  var email by rememberSaveable { mutableStateOf("example@example.com") }
 
   var visaEnabled by rememberSaveable { mutableStateOf(true) }
   var mastercardEnabled by rememberSaveable { mutableStateOf(true) }
@@ -550,7 +550,7 @@ class MainActivity : ComponentActivity() {
           )
         )
         FilterChip(
-          enabled = false, // TODO: remove this.
+          enabled = savedCardEnabled,
           selected = savedCardEnabled,
           onClick = { onSavedCardChange(!savedCardEnabled) },
           label = { Text("Saved Card") },
