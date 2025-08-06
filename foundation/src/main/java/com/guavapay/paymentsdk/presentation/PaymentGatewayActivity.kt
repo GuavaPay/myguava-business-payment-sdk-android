@@ -12,6 +12,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.content.IntentCompat.getParcelableExtra
 import androidx.core.content.IntentCompat.getSerializableExtra
+import com.guavapay.myguava.business.myguava3ds2.init.ui.GUiCustomization
 import com.guavapay.paymentsdk.LibraryState.Device
 import com.guavapay.paymentsdk.LibraryUnit.Companion.from
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
@@ -23,7 +24,6 @@ import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayPayload
 import com.guavapay.paymentsdk.logging.i
 import com.guavapay.paymentsdk.network.local.localipv4
 import com.guavapay.paymentsdk.platform.function.ℓ
-import com.guavapay.myguava.business.myguava3ds2.init.ui.GUiCustomization
 
 internal class PaymentGatewayActivity : ComponentActivity() {
   init {
