@@ -3,9 +3,9 @@ package com.guavapay.paymentsdk.platform.manifest
 import android.content.Context
 import android.content.pm.PackageManager.GET_META_DATA
 
-data class ManifestFields(val baseUrl: String)
+internal data class ManifestFields(val baseUrl: String)
 
-fun Context.manifestFields() = runCatching {
+internal fun Context.manifestFields() = runCatching {
   val ai = packageManager.getApplicationInfo(packageName, GET_META_DATA)
   val metaData = ai.metaData
   val environment = metaData?.getString(META_DATA_ENV) ?: DEFAULT_ENV
