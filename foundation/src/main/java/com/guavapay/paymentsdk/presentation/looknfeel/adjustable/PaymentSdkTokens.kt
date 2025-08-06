@@ -3,6 +3,7 @@ package com.guavapay.paymentsdk.presentation.looknfeel.adjustable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CheckboxColors
 import androidx.compose.material3.CheckboxDefaults
@@ -20,7 +21,19 @@ import com.guavapay.paymentsdk.presentation.looknfeel.BrandOnDisabled
 import com.guavapay.paymentsdk.presentation.looknfeel.BrandOnDisabledDark
 import com.guavapay.paymentsdk.presentation.platform.PaymentGatewayTokensProvider
 
+/**
+ * Default implementation of [PaymentGatewayTokensProvider] for the Payment SDK.
+ *
+ * This class provides default color tokens for various UI components, adapting to light and dark themes.
+ * It can be extended to customize the component colors.
+ *
+ * @author Pavel Erokhin (MairwunNx / GuavaAgent007)
+ */
 open class PaymentSdkTokens : PaymentGatewayTokensProvider {
+  /**
+   * Provides the default colors for an outlined text field.
+   * @return A [TextFieldColors] instance.
+   */
   @Composable override fun textfield(): TextFieldColors {
     val isLightTheme = !isSystemInDarkTheme()
 
@@ -57,6 +70,10 @@ open class PaymentSdkTokens : PaymentGatewayTokensProvider {
     )
   }
 
+  /**
+   * Provides the default colors for a button.
+   * @return A [ButtonColors] instance.
+   */
   @Composable override fun button(): ButtonColors {
     val isLightTheme = !isSystemInDarkTheme()
 
@@ -68,10 +85,16 @@ open class PaymentSdkTokens : PaymentGatewayTokensProvider {
     )
   }
 
-  @Composable override fun card() = CardDefaults.cardColors(
-    containerColor = MaterialTheme.colorScheme.surface
-  )
+  /**
+   * Provides the default colors for a card.
+   * @return A [CardColors] instance.
+   */
+  @Composable override fun card(): CardColors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
 
+  /**
+   * Provides the default colors for a checkbox.
+   * @return A [CheckboxColors] instance.
+   */
   @Composable override fun checkbox(): CheckboxColors {
     val isLightTheme = !isSystemInDarkTheme()
 
@@ -85,6 +108,10 @@ open class PaymentSdkTokens : PaymentGatewayTokensProvider {
     )
   }
 
+  /**
+   * Provides the default colors for a radio button.
+   * @return A [RadioButtonColors] instance.
+   */
   @Composable override fun radio(): RadioButtonColors {
     val isLightTheme = !isSystemInDarkTheme()
 
@@ -96,6 +123,10 @@ open class PaymentSdkTokens : PaymentGatewayTokensProvider {
     )
   }
 
+  /**
+   * Provides the default colors for a switch.
+   * @return A [SwitchColors] instance.
+   */
   @Composable override fun switch(): SwitchColors {
     val isLightTheme = !isSystemInDarkTheme()
 
