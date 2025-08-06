@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package com.guavapay.paymentsdk.integrations.remote
 
 import com.guavapay.paymentsdk.LibraryUnit
