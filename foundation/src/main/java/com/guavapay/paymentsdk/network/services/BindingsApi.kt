@@ -10,18 +10,18 @@ interface BindingsApi {
   suspend fun getBindingList(
     @Query("page") page: Int? = null,
     @Query("size") size: Int? = null,
-    @Query("sort") sort: String? = null,
-    @Query("payer-id") payerId: String? = null,
-    @Query("merchant-id") filterMerchantId: String? = null,
-    @Query("id") bindingId: List<String>? = null,
-    @Query("activity") activity: Boolean? = null,
-    @Query("card-scheme") cardScheme: String? = null
   ): Response<Models.GetBindingListResponse>
 
   @PUT("binding/{bindingId}/activity")
   suspend fun changeBindingActivity(
     @Path("bindingId") bindingId: String,
     @Body request: Models.ChangeBindingActivityRequest
+  ): Response<Unit>
+
+  @PATCH("binding/{bindingId}")
+  suspend fun updateBinding(
+    @Path("bindingId") bindingId: String,
+    @Body request: Models.UpdateBindingRequest
   ): Response<Unit>
 
   @DELETE("binding/{bindingId}")
@@ -47,9 +47,10 @@ interface BindingsApi {
     @Serializable
     data class BindingInList(
       @SerialName("id") val id: String,
+      @SerialName("name") val name: String,
       @SerialName("payerId") val payerId: String? = null,
       @SerialName("creationDate") val creationDate: String,
-      @SerialName("lastUseDate") val lastUseDate: String,
+      @SerialName("lastUseDate") val lastUseDate: String? = null,
       @SerialName("activity") val activity: Boolean,
       @SerialName("cardData") val cardData: CardData,
       @SerialName("product") val product: CardProduct? = null
@@ -67,6 +68,11 @@ interface BindingsApi {
       @SerialName("id") val id: String? = null,
       @SerialName("brand") val brand: String? = null,
       @SerialName("category") val category: String? = null
+    )
+
+    @Serializable
+    data class UpdateBindingRequest(
+      @SerialName("name") val name: String
     )
   }
 }
