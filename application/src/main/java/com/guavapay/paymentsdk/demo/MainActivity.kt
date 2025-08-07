@@ -550,7 +550,6 @@ class MainActivity : ComponentActivity() {
           )
         )
         FilterChip(
-          enabled = savedCardEnabled,
           selected = savedCardEnabled,
           onClick = { onSavedCardChange(!savedCardEnabled) },
           label = { Text("Saved Card") },
