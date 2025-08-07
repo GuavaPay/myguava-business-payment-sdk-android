@@ -586,7 +586,7 @@ internal class MainVM(
         )
 
         val resp = RemoteExecutePayment(lib, orderId, req)
-        threeDs.handleIfNeeded(resp, orderId)
+        threeDs.handleIfNeeded(resp, orderId)?.let { _effects.send(it) }
       } catch (t: Exception) {
         unbusy()
         e("executeCardPayment failed: ${t.message}", t)
@@ -645,7 +645,7 @@ internal class MainVM(
         )
 
         val resp = RemoteExecutePayment(lib, orderId, req)
-        threeDs.handleIfNeeded(resp, orderId)
+        threeDs.handleIfNeeded(resp, orderId)?.let { _effects.send(it) }
       } catch (t: Exception) {
         unbusy()
         e("executeGooglePayPayment failed: ${t.message}", t)
