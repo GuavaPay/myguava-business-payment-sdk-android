@@ -37,6 +37,7 @@ internal object Navigation {
       entryDecorators = listOf(
         rememberSceneSetupNavEntryDecorator(),
         rememberLoggingNavEntryDecorator(),
+        rememberMetricaNavEntryDecorator(),
         rememberSavedStateNavEntryDecorator(),
         rememberViewModelStoreNavEntryDecorator()
       ),
