@@ -20,6 +20,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.guavapay.paymentsdk.R
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
+import io.sentry.compose.SentryModifier.sentryTag
 
 @Composable internal fun MenuButton(isOpen: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
   Box(
@@ -27,7 +28,8 @@ import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
       .size(width = 40.dp, height = 48.dp)
       .clip(RoundedCornerShape(8.dp))
       .background(MaterialTheme.colorScheme.surfaceVariant)
-      .clickable { onClick() },
+      .clickable { onClick() }
+      .sentryTag("menu-button-${if (isOpen) "close" else "open"}"),
     contentAlignment = Alignment.Center
   ) {
     Crossfade(
