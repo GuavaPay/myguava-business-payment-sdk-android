@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalComposeUiApi::class)
+
 package com.guavapay.paymentsdk.presentation.screens.abort
 
 import androidx.compose.foundation.background
@@ -17,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -30,12 +33,14 @@ import com.guavapay.paymentsdk.presentation.navigation.rememberNavBackStack
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
 import com.guavapay.paymentsdk.presentation.screens.Screen
 import com.guavapay.paymentsdk.presentation.screens.abort.AbortScreen.Actions
+import io.sentry.compose.SentryModifier.sentryTag
+import io.sentry.compose.SentryTraced
 import java.io.Serializable
 
 internal object AbortScreen : Screen<AbortRoute, Actions> {
   data class Actions(val finish: (Throwable?) -> Unit = @JvmSerializableLambda {}) : Serializable
 
-  @Composable override operator fun invoke(nav: SnapshotStateList<Route>, route: AbortRoute, actions: Actions) {
+  @Composable override operator fun invoke(nav: SnapshotStateList<Route>, route: AbortRoute, actions: Actions) = SentryTraced("abort-screen") {
     val scroll = rememberScrollState()
 
     Column(
@@ -81,7 +86,7 @@ internal object AbortScreen : Screen<AbortRoute, Actions> {
 
       Button(
         onClick = { actions.finish(route.throwable) },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().sentryTag("finish-button"),
         style = Button.primary()
       ) {
         Text(
