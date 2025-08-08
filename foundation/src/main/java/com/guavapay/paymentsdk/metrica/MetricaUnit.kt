@@ -25,7 +25,7 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
     isAttachThreads = true
 
     release = "sdk@0.5.2"
-    dist = "public.release@0.5.2"
+    dist = "0.5.2.public.release"
   }
 
   private val globalScope = Scope(options)
@@ -42,19 +42,25 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
     }
   }
 
-  fun breadcrumb(message: String, category: String = "unspecified", type: String = "unspecified", level: SentryLevel = SentryLevel.INFO) {
+  fun breadcrumb(message: String, category: String = "unspecified", type: String = "unspecified", level: SentryLevel = SentryLevel.INFO, data: Map<String, Any?> = emptyMap()) {
     scopes.addBreadcrumb(
       Breadcrumb().apply {
-        this.message  = message
-        this.level    = level
+        this.message = message
+        this.level = level
         this.category = category
-        this.type     = type
+        this.type = type
+        this.data.putAll(data)
       }
     )
   }
 
-  fun event(message: String, level: SentryLevel = SentryLevel.INFO) {
-    scopes.captureMessage(message, level) { scope -> scope.fillContexts() }
+  fun event(message: String, level: SentryLevel = SentryLevel.INFO, tags: Map<String, String> = emptyMap(), extras: Map<String, String> = emptyMap(), contexts: Map<String, Any> = emptyMap()) {
+    scopes.captureMessage(message, level) { scope ->
+      scope.fillContexts()
+      tags.forEach  { (k, v) -> scope.setTag(k, v) }
+      extras.forEach { (k, v) -> scope.setExtra(k, v) }
+      contexts.forEach { (k, v) -> scope.setContexts(k, v) }
+    }
   }
 
   private fun IScope.fillContexts() {
