@@ -2,6 +2,7 @@
 
 package com.guavapay.paymentsdk.platform.coroutines
 
+import com.guavapay.paymentsdk.LibraryUnit
 import com.guavapay.paymentsdk.logging.e
 import com.guavapay.paymentsdk.platform.reflection.CallerFactory
 import com.guavapay.paymentsdk.platform.threading.ThreadFactory
@@ -16,7 +17,7 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.CoroutineContext
 
-internal class CoroutineUnit {
+internal class CoroutineUnit(private val lib: LibraryUnit) {
   val executors = Executorz(); inner class Executorz {
     val common: ExecutorService = Executors.newCachedThreadPool(ThreadFactory("common"))
 
@@ -35,7 +36,7 @@ internal class CoroutineUnit {
   }
 
   val handlers = Handlers(); inner class Handlers {
-    val metrica = ExceptionHandler { -> }
+    val metrica = ExceptionHandler { _, error -> lib.metrica.sentry.captureException(error) }
     val logcat = ExceptionHandler { c, e -> e(template(c, e), e) }
 
     inline fun <reified T : Throwable> typed(crossinline handler: () -> Any?) = typed<T> { _ -> handler() }
