@@ -24,10 +24,12 @@ import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayPayload
 import com.guavapay.paymentsdk.logging.i
 import com.guavapay.paymentsdk.network.local.localipv4
 import com.guavapay.paymentsdk.platform.function.ℓ
+import io.sentry.SentryLevel
 
 internal class PaymentGatewayActivity : ComponentActivity() {
   init {
     i("SDK activity initialization started")
+    from(this).metrica.breadcrumb("Post-Initialized", category = "sdk.lifecycle", type = "info")
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,6 +37,7 @@ internal class PaymentGatewayActivity : ComponentActivity() {
     ensureSdkState()
     enableSecureFlags()
     enableEdgeToEdge()
+    from(this).metrica.breadcrumb("Created", category = "sdk.lifecycle", type = "info")
     setContent { PaymentGatewayBottomSheet(::finishWithResult) }
   }
 
@@ -47,18 +50,20 @@ internal class PaymentGatewayActivity : ComponentActivity() {
 
   override fun onResume() {
     super.onResume().also { i("SDK activity resuming") }
+    from(this).metrica.breadcrumb("Resumed", category = "sdk.lifecycle", type = "info")
     enableSecureFlags()
-    from(this).metrica.breadcrumb("SDK → Initialized", category = "sdk.lifecycle", type = "info")
+    from(this).metrica.breadcrumb("Initialized", category = "sdk.lifecycle", type = "info")
   }
 
   override fun onPause() {
     super.onPause().also { i("SDK activity pausing") }
+    from(this).metrica.breadcrumb("Paused", category = "sdk.lifecycle", type = "info")
     val am = getSystemService(ACTIVITY_SERVICE) as ActivityManager
     am.appTasks.forEach { task -> task.setExcludeFromRecents(true) }
   }
 
   override fun onDestroy() {
-    from(this).metrica.breadcrumb("SDK → Finish", category = "sdk.lifecycle", type = "info")
+    from(this).metrica.breadcrumb("Finish", category = "sdk.lifecycle", type = "info")
     from(this).metrica.close()
     super.onDestroy().also { i("SDK activity destroying") }
   }
@@ -76,7 +81,28 @@ internal class PaymentGatewayActivity : ComponentActivity() {
 
   private fun finishWithResult(result: PaymentResult) {
     i("Requested finish SDK activity with result: $result")
-    from(this).metrica.breadcrumb("Payment → Finished: ${result::class.simpleName}", category = "payment.status", type = "info")
+
+    from(this).metrica.breadcrumb(
+      message = "Finished",
+      category = "payment.status",
+      type = "info",
+      data = mapOf("result" to result.toString())
+    )
+
+    val level = when (result) {
+      is Success -> SentryLevel.INFO
+      is Cancel -> SentryLevel.INFO
+      is Unsuccess -> SentryLevel.WARNING
+      is Error -> SentryLevel.ERROR
+    }
+
+    from(this).metrica.event(
+      message = "Payment finished",
+      level = level,
+      tags = mapOf("payment_result" to result::class.simpleName!!),
+      contexts = mapOf("payment" to mapOf("result" to result.toString()))
+    )
+
     Intent().apply {
       when (result) {
         is Success -> {
@@ -84,15 +110,18 @@ internal class PaymentGatewayActivity : ComponentActivity() {
           result.payment?.let { putExtra(EXTRA_SDK_SUCCESS_PAYMENT_PAYMENT, it) }
           result.order?.let { putExtra(EXTRA_SDK_SUCCESS_PAYMENT_ORDER, it) }
         }
+
         is Unsuccess -> {
           putExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_UNSUCCESS)
           result.payment?.let { putExtra(EXTRA_SDK_SUCCESS_PAYMENT_PAYMENT, it) }
           result.order?.let { putExtra(EXTRA_SDK_SUCCESS_PAYMENT_ORDER, it) }
         }
+
         is Error -> {
           putExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_FAILED)
           putExtra(EXTRA_SDK_ERROR_THROWABLE, result.throwable)
         }
+
         is Cancel -> {
           putExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_CANCELED)
         }
@@ -103,6 +132,32 @@ internal class PaymentGatewayActivity : ComponentActivity() {
 
   private fun finishWithError(throwable: Throwable? = null) {
     i("Requested finish SDK activity with error: $throwable")
+
+    from(this).metrica.breadcrumb(
+      message = "Failed",
+      category = "payment.status",
+      type = "info",
+      level = SentryLevel.ERROR,
+      data = mapOf(
+        "error_type" to (throwable?.javaClass?.simpleName ?: "Unknown"),
+        "error_msg" to (throwable?.message ?: "")
+      )
+    )
+
+    from(this).metrica.event(
+      message = "Payment failed",
+      level = SentryLevel.ERROR,
+      tags = mapOf("payment_result" to "Error"),
+      contexts = mapOf(
+        "error" to mapOf(
+          "type" to (throwable?.javaClass?.simpleName ?: "Unknown"),
+          "message" to (throwable?.message ?: "")
+        )
+      )
+    )
+
+    throwable?.let(from(this).metrica::exception)
+
     Intent().apply {
       putExtra(EXTRA_SDK_RESULT_CODE, SDK_RESULT_FAILED)
       putExtra(EXTRA_SDK_ERROR_THROWABLE, throwable)
