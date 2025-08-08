@@ -36,7 +36,7 @@ internal class CoroutineUnit(private val lib: LibraryUnit) {
   }
 
   val handlers = Handlers(); inner class Handlers {
-    val metrica = ExceptionHandler { _, error -> lib.metrica.sentry.captureException(error) }
+    val metrica = ExceptionHandler { _, error -> lib.metrica.exception(error) }
     val logcat = ExceptionHandler { c, e -> e(template(c, e), e) }
 
     inline fun <reified T : Throwable> typed(crossinline handler: () -> Any?) = typed<T> { _ -> handler() }
