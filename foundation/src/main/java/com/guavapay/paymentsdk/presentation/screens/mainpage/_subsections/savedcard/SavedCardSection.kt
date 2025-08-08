@@ -24,6 +24,7 @@ import com.guavapay.paymentsdk.presentation.components.atoms.Progress
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
 import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM.State.SavedCard
 import com.guavapay.paymentsdk.presentation.screens.mainpage._subsections.savedcard._components.SavedCardItem
+import io.sentry.compose.SentryModifier.sentryTag
 
 internal object SavedCardSection {
   data class Actions(
@@ -87,6 +88,7 @@ internal object SavedCardSection {
   @Composable private fun CardList(list: List<SavedCard>, selectedCardId: String?, cvvInput: String, enabled: Boolean, actions: Actions) {
     list.fastForEachIndexed { index, card ->
       SavedCardItem(
+        modifier = Modifier.sentryTag("saved-card-item"),
         maskedPan = card.maskedPan,
         cardName = card.cardName,
         scheme = card.scheme,
