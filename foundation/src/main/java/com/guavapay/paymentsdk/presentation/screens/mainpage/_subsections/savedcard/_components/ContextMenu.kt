@@ -19,6 +19,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import com.guavapay.paymentsdk.R
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
+import io.sentry.compose.SentryModifier.sentryTag
 
 @Composable internal fun ContextMenu(onDeleteClick: () -> Unit, onEditClick: () -> Unit, modifier: Modifier = Modifier) {
   Row(
@@ -31,7 +32,8 @@ import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
         .clip(RoundedCornerShape(8.dp))
         .background(MaterialTheme.colorScheme.surface)
         .border(1.dp, color = MaterialTheme.colorScheme.onSurface, shape = RoundedCornerShape(8.dp))
-        .clickable { onEditClick() },
+        .clickable { onEditClick() }
+        .sentryTag("edit-card-button"),
       contentAlignment = Alignment.Center
     ) {
       Icon(
@@ -47,7 +49,8 @@ import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
         .size(width = 40.dp, height = 46.dp)
         .clip(RoundedCornerShape(8.dp))
         .background(MaterialTheme.colorScheme.error)
-        .clickable { onDeleteClick() },
+        .clickable { onDeleteClick() }
+        .sentryTag("delete-card-button"),
       contentAlignment = Alignment.Center,
     ) {
       Icon(
