@@ -48,7 +48,7 @@ internal fun LoggingNavEntryDecorator(
           lib.metrica.breadcrumb(
             message = "Navigation: -> ${key::class.simpleName}",
             category = "navigation",
-            type = "navigation"
+            type = "action"
           )
         }
         DisposableEffect(key) {
@@ -56,7 +56,7 @@ internal fun LoggingNavEntryDecorator(
             lib.metrica.breadcrumb(
               message = "Navigation: <- ${key::class.simpleName}",
               category = "navigation",
-              type = "navigation",
+              type = "action",
             )
           }
         }
