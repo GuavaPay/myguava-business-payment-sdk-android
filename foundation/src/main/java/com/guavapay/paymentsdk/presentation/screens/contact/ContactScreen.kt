@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalComposeUiApi::class)
+
 package com.guavapay.paymentsdk.presentation.screens.contact
 
 import androidx.compose.foundation.layout.Column
@@ -19,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -31,8 +34,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.guavapay.paymentsdk.R
 import com.guavapay.paymentsdk.presentation.components.atoms.Button
-import com.guavapay.paymentsdk.presentation.components.molecules.CountryPicker
 import com.guavapay.paymentsdk.presentation.components.atoms.TextField
+import com.guavapay.paymentsdk.presentation.components.molecules.CountryPicker
 import com.guavapay.paymentsdk.presentation.navigation.Route
 import com.guavapay.paymentsdk.presentation.navigation.Route.ContactRoute
 import com.guavapay.paymentsdk.presentation.navigation.Route.PhoneRoute
@@ -44,12 +47,14 @@ import com.guavapay.paymentsdk.presentation.platform.rememberViewModel
 import com.guavapay.paymentsdk.presentation.platform.string
 import com.guavapay.paymentsdk.presentation.screens.Screen
 import com.guavapay.paymentsdk.presentation.screens.contact.ContactScreen.Actions
+import io.sentry.compose.SentryModifier.sentryTag
+import io.sentry.compose.SentryTraced
 import java.io.Serializable
 
 internal object ContactScreen : Screen<ContactRoute, Actions> {
   object Actions : Serializable { private fun readResolve(): Any = Actions }
 
-  @Composable override fun invoke(nav: SnapshotStateList<Route>, route: ContactRoute, actions: Actions) {
+  @Composable override fun invoke(nav: SnapshotStateList<Route>, route: ContactRoute, actions: Actions) = SentryTraced("contact-screen") {
     val vm = rememberViewModel(::ContactVM, route)
     val state = vm.state.collectAsStateWithLifecycle()
     val scroll = rememberScrollState()
@@ -60,6 +65,7 @@ internal object ContactScreen : Screen<ContactRoute, Actions> {
     Column {
       IconButton(
         onClick = nav::removeLastOrNull,
+        modifier = Modifier.sentryTag("back-button"),
       ) {
         Icon(
           painter = painterResource(id = R.drawable.ic_arrow_back),
@@ -99,7 +105,8 @@ internal object ContactScreen : Screen<ContactRoute, Actions> {
           placeholder = stringResource(R.string.enter_your_email),
           error = state.value.emailError?.string(),
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
-          singleLine = true
+          singleLine = true,
+          modifier = Modifier.sentryTag("email-input")
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -119,7 +126,8 @@ internal object ContactScreen : Screen<ContactRoute, Actions> {
           CountryPicker(
             countryCode = state.value.countryIso,
             phoneCode = state.value.countryCode,
-            onClick = { nav.add(PhoneRoute { countryCode, countryIso -> vm.handles.country(countryCode, countryIso) }) }
+            onClick = { nav.add(PhoneRoute { countryCode, countryIso -> vm.handles.country(countryCode, countryIso) }) },
+            modifier = Modifier.sentryTag("country-picker")
           )
 
           Spacer(modifier = Modifier.width(8.dp))
@@ -142,7 +150,7 @@ internal object ContactScreen : Screen<ContactRoute, Actions> {
             },
             singleLine = true,
             visualTransformation = phoneVisual,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f).sentryTag("phone-input")
           )
         }
 
@@ -154,7 +162,7 @@ internal object ContactScreen : Screen<ContactRoute, Actions> {
             nav.removeLastOrNull()
           },
           enabled = state.value.isValid,
-          modifier = Modifier.fillMaxWidth(),
+          modifier = Modifier.fillMaxWidth().sentryTag("continue-button"),
           style = Button.primary()
         ) {
           Text(
