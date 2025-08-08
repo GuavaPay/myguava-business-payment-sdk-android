@@ -29,6 +29,7 @@ import com.guavapay.paymentsdk.presentation.screens.mainpage._subsections.newcar
 import com.guavapay.paymentsdk.presentation.screens.mainpage._subsections.newcard._components.ContactInfoBlock
 import com.guavapay.paymentsdk.presentation.screens.mainpage._subsections.newcard._components.SaveCardBlock
 import com.guavapay.paymentsdk.rememberLibraryUnit
+import io.sentry.compose.SentryModifier.sentryTag
 
 internal object NewCardSection {
   data class Actions(
@@ -58,7 +59,7 @@ internal object NewCardSection {
   ) {
     Column(modifier = modifier.fillMaxWidth()) {
       TextField(
-        modifier = Modifier.focusRequester(panFocus),
+        modifier = Modifier.focusRequester(panFocus).sentryTag("pan-input"),
         header = stringResource(R.string.initial_newcard_number),
         value = state.fields.pan,
         onValueChange = actions.onPan,
@@ -96,7 +97,7 @@ internal object NewCardSection {
         Spacer(Modifier.height(12.dp))
 
         TextField(
-          modifier = Modifier.focusRequester(chFocus),
+          modifier = Modifier.focusRequester(chFocus).sentryTag("cardholder-input"),
           header = stringResource(R.string.initial_newcard_cardholder_name),
           value = state.fields.ch,
           onValueChange = actions.onCh,
@@ -125,7 +126,8 @@ internal object NewCardSection {
             onName = actions.onCn,
             onNameBlur = actions.onCnBlur,
             onDone = actions.onPay
-          )
+          ),
+          modifier = Modifier.sentryTag("save-card-block")
         )
       }
 
@@ -138,7 +140,8 @@ internal object NewCardSection {
               email = contact.maskedEmail,
               phoneNumber = contact.maskedPhone
             ),
-            onChangeInfoClick = actions.onChangeContact
+            onChangeInfoClick = actions.onChangeContact,
+            modifier = Modifier.sentryTag("contact-info-block")
           )
         }
       }

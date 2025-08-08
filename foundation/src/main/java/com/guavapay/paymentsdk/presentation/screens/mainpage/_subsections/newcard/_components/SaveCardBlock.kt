@@ -39,9 +39,10 @@ internal object SaveCardBlock {
     checked: Boolean,
     name: String,
     error: Text?,
-    actions: Actions = Actions()
+    actions: Actions = Actions(),
+    modifier: Modifier = Modifier,
   ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = modifier.fillMaxWidth()) {
       TitledCheckbox(
         checked = checked,
         onCheckedChange = actions.onToggle,
