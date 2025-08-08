@@ -46,17 +46,26 @@ internal fun LoggingNavEntryDecorator(
       key(key) {
         LaunchedEffect(key) {
           lib.metrica.breadcrumb(
-            message = "Navigation: → ${key::class.simpleName}",
-            category = "navigation",
-            type = "action"
+            message = "Navigation-Executed",
+            category = "sdk.navigation",
+            type = "action",
+            data = mapOf(
+              "direction" to "→",
+              "screen" to (key::class.simpleName ?: "Unknown")
+            )
           )
         }
+
         DisposableEffect(key) {
           onDispose {
             lib.metrica.breadcrumb(
-              message = "Navigation: ← ${key::class.simpleName}",
-              category = "navigation",
+              message = "Navigation-Executed",
+              category = "sdk.navigation",
               type = "action",
+              data = mapOf(
+                "direction" to "←",
+                "screen" to (key::class.simpleName ?: "Unknown")
+              )
             )
           }
         }
