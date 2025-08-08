@@ -150,6 +150,7 @@ dependencies {
 
   implementation(libs.sentry.android)
   implementation(libs.sentry.compose)
+  implementation(libs.sentry.okhttp)
 
   implementation(libs.androidx.core)
   implementation(libs.androidx.lifecycle.runtime)
