@@ -1,4 +1,5 @@
 @file:Suppress("LocalVariableName", "RemoveRedundantQualifierName", "KotlinConstantConditions")
+@file:OptIn(ExperimentalComposeUiApi::class)
 
 package com.guavapay.paymentsdk.presentation.screens.mainpage
 
@@ -25,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -73,13 +75,15 @@ import com.guavapay.paymentsdk.presentation.screens.mainpage._components.PayButt
 import com.guavapay.paymentsdk.presentation.screens.mainpage._subsections.newcard.NewCardSection
 import com.guavapay.paymentsdk.presentation.screens.mainpage._subsections.savedcard.SavedCardSection
 import com.guavapay.paymentsdk.rememberLibraryUnit
+import io.sentry.compose.SentryModifier.sentryTag
+import io.sentry.compose.SentryTraced
 import kotlinx.coroutines.launch
 import java.io.Serializable
 
 internal object MainScreen : Screen<HomeRoute, Actions> {
   data class Actions(val finish: (PaymentResult) -> Unit = @JvmSerializableLambda {}) : Serializable
 
-  @Composable override operator fun invoke(nav: SnapshotStateList<Route>, route: HomeRoute, actions: Actions) {
+  @Composable override operator fun invoke(nav: SnapshotStateList<Route>, route: HomeRoute, actions: Actions) = SentryTraced("main-screen") {
     val lib = rememberLibraryUnit()
     val vm = rememberViewModel(::MainVM)
     val state by vm.state.collectAsStateWithLifecycle()
@@ -160,7 +164,11 @@ internal object MainScreen : Screen<HomeRoute, Actions> {
       val gpayxtras = remember(vm.internal.order, vm.internal.gpayCtx) { vm.internal.order to vm.internal.gpayCtx }
       if (state.gpay?.available == true && gpayxtras.first != null && gpayxtras.second != null) {
         val orchestrator = rememberGPayOrchestrator(order = gpayxtras.first!!, gpayctx = gpayxtras.second!!)
-        GPayButton(orchestrator = orchestrator, result = vm.handles::gpay)
+        GPayButton(
+            modifier = Modifier.sentryTag("gpay-button"),
+            orchestrator = orchestrator,
+            result = vm.handles::gpay
+        )
         Spacer(Modifier.height(16.dp))
         InstrumentsDivider(title = stringResource(R.string.initial_or_pay_by_card))
         Spacer(Modifier.height(16.dp))
@@ -193,6 +201,7 @@ internal object MainScreen : Screen<HomeRoute, Actions> {
         val saved = state.saved!!
 
         ModeSelector(
+          modifier = Modifier.sentryTag("mode-selector"),
           showSavedCards = state.mode == MainVM.State.Mode.SavedCard,
           onModeChanged = { show ->
             vm.handles.setPaymentScreenMode(if (show) MainVM.State.Mode.SavedCard else MainVM.State.Mode.NewCard)
@@ -240,7 +249,7 @@ internal object MainScreen : Screen<HomeRoute, Actions> {
       Spacer(Modifier.height(24.dp))
 
       PayButton(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().sentryTag("pay-button"),
         amount = state.payText?.string(),
         enabled = vm.handles.isEligibleToPay,
         isLoading = state.busy,
