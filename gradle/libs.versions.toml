@@ -27,6 +27,7 @@ play-services-wallet = "19.4.0"
 play-services-wallet-compose = "1.1.0"
 
 sentry = "8.18.0"
+sentry-gradle-plugin = "5.8.1"
 
 junit = "4.13.2"
 material = "1.12.0"
@@ -92,3 +93,4 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
 android-library = { id = "com.android.library", version.ref = "agp" }
+sentry-android-gradle = { id = "io.sentry.android.gradle", version.ref = "sentry-gradle-plugin" }
