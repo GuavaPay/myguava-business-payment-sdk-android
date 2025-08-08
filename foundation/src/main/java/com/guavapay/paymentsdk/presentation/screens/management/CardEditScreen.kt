@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalComposeUiApi::class)
+
 package com.guavapay.paymentsdk.presentation.screens.management
 
 import androidx.compose.foundation.background
@@ -18,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -37,12 +40,14 @@ import com.guavapay.paymentsdk.presentation.platform.rememberViewModel
 import com.guavapay.paymentsdk.presentation.platform.string
 import com.guavapay.paymentsdk.presentation.screens.Screen
 import com.guavapay.paymentsdk.presentation.screens.management.CardEditScreen.Actions
+import io.sentry.compose.SentryModifier.sentryTag
+import io.sentry.compose.SentryTraced
 import java.io.Serializable
 
 internal object CardEditScreen : Screen<CardEditRoute, Actions> {
   object Actions : Serializable { private fun readResolve(): Any = Actions }
 
-  @Composable override fun invoke(nav: SnapshotStateList<Route>, route: CardEditRoute, actions: Actions) {
+  @Composable override fun invoke(nav: SnapshotStateList<Route>, route: CardEditRoute, actions: Actions) = SentryTraced("card-edit-screen") {
     val vm = rememberViewModel(::CardEditVM, route)
     val state = vm.state.collectAsStateWithLifecycle()
     val scroll = rememberScrollState()
@@ -89,7 +94,8 @@ internal object CardEditScreen : Screen<CardEditRoute, Actions> {
         onDoneAction = {
           nav.removeLastOrNull()
           route.onEditConfirmed(route.cardId, state.value.cardName)
-        }
+        },
+        modifier = Modifier.sentryTag("card-name-input")
       )
 
       Spacer(modifier = Modifier.height(16.dp))
@@ -99,7 +105,7 @@ internal object CardEditScreen : Screen<CardEditRoute, Actions> {
           nav.removeLastOrNull()
           route.onEditConfirmed(route.cardId, state.value.cardName)
         },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().sentryTag("save-button"),
         enabled = state.value.cardNameError == null,
         style = Button.primary()
       ) {
@@ -113,7 +119,7 @@ internal object CardEditScreen : Screen<CardEditRoute, Actions> {
 
       Button(
         onClick = { nav.removeLastOrNull() },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().sentryTag("cancel-button"),
         style = Button.secondary()
       ) {
         Text(
