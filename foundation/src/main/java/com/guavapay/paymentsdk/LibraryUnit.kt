@@ -8,6 +8,7 @@ import androidx.startup.AppInitializer
 import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit
 import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayPayload
 import com.guavapay.paymentsdk.logging.i
+import com.guavapay.paymentsdk.metrica.MetricaUnit
 import com.guavapay.paymentsdk.network.NetworkUnit
 import com.guavapay.paymentsdk.platform.coroutines.CoroutineUnit
 import com.guavapay.paymentsdk.platform.function.lazy
@@ -32,8 +33,9 @@ internal class LibraryUnit(val context: Context) {
   val state by lazy(::LibraryState)
   val coroutine by lazy(::CoroutineUnit)
   val network by lazy(::NetworkUnit)
+  val metrica by lazy(::MetricaUnit)
 
-  private val initialize = listOf(::state, ::coroutine, ::network)
+  private val initialize = listOf(::state, ::coroutine, ::network, ::metrica)
   fun initialize(): LibraryUnit {
     i("Starting initialization of library components")
     initialize.forEach(KProperty0<*>::invoke)
