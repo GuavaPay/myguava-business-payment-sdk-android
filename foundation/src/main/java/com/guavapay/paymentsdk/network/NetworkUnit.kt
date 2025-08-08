@@ -17,6 +17,9 @@ import com.guavapay.paymentsdk.network.services.OrderApi
 import com.guavapay.paymentsdk.network.ssevents.SseClient
 import com.guavapay.paymentsdk.platform.function.lazy
 import com.guavapay.paymentsdk.platform.manifest.manifestFields
+import io.sentry.HttpStatusCodeRange
+import io.sentry.okhttp.SentryOkHttpEventListener
+import io.sentry.okhttp.SentryOkHttpInterceptor
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import okhttp3.Cache
@@ -102,7 +105,14 @@ internal class NetworkUnit(private val lib: LibraryUnit) {
     .also { i("${T::class.simpleName} retrofit API has successfully created") }
 
   private fun client(vararg interceptor: Interceptor): OkHttpClient {
-    val builder = Builder().dispatcher(dispatcher).cache(cache).retryOnConnectionFailure(true).timeouts().redirects()
+    val builder = Builder()
+      .dispatcher(dispatcher)
+      .cache(cache)
+      .retryOnConnectionFailure(true)
+      .timeouts()
+      .redirects()
+      .addInterceptor(SentryOkHttpInterceptor(captureFailedRequests = true, failedRequestStatusCodes = listOf(HttpStatusCodeRange(400, 599))))
+      .eventListener(SentryOkHttpEventListener())
     interceptor.forEach(builder::addInterceptor)
     val client = builder.build()
     return client
