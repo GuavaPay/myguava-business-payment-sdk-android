@@ -69,4 +69,6 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
     }
     lib.state.device.ip?.let { user = User().apply { ipAddress = it } }
   }
+
+  fun close() = scopes.close()
 }

@@ -59,6 +59,7 @@ internal class PaymentGatewayActivity : ComponentActivity() {
 
   override fun onDestroy() {
     from(this).metrica.breadcrumb("SDK → Finish", category = "sdk.lifecycle", type = "info")
+    from(this).metrica.close()
     super.onDestroy().also { i("SDK activity destroying") }
   }
 
