@@ -148,6 +148,9 @@ dependencies {
   implementation(libs.play.services.wallet)
   implementation(libs.play.services.wallet.compose)
 
+  implementation(libs.sentry.android)
+  implementation(libs.sentry.compose)
+
   implementation(libs.androidx.core)
   implementation(libs.androidx.lifecycle.runtime)
   implementation(libs.androidx.activity.compose)
