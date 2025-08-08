@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalComposeUiApi::class)
+
 package com.guavapay.paymentsdk.presentation.screens.phone
 
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -39,6 +42,8 @@ import com.guavapay.paymentsdk.presentation.screens.Screen
 import com.guavapay.paymentsdk.presentation.screens.phone.PhoneScreen.Actions
 import com.guavapay.paymentsdk.presentation.screens.phone._components.PhoneItem
 import com.guavapay.paymentsdk.presentation.screens.phone._components.PhoneSearch
+import io.sentry.compose.SentryModifier.sentryTag
+import io.sentry.compose.SentryTraced
 import java.io.Serializable
 
 internal object PhoneScreen : Screen<PhoneRoute, Actions> {
@@ -46,12 +51,15 @@ internal object PhoneScreen : Screen<PhoneRoute, Actions> {
     private fun readResolve(): Any = Actions
   }
 
-  @Composable override fun invoke(nav: SnapshotStateList<Route>, route: PhoneRoute, actions: Actions) {
+  @Composable override fun invoke(nav: SnapshotStateList<Route>, route: PhoneRoute, actions: Actions) = SentryTraced("phone-screen") {
     val vm = rememberViewModel(::PhoneVM, route)
     val state = vm.state.collectAsStateWithLifecycle()
 
     Column {
-      IconButton(onClick = nav::removeLastOrNull) {
+      IconButton(
+        onClick = nav::removeLastOrNull,
+        modifier = Modifier.sentryTag("back-button")
+      ) {
         Icon(
           painter = painterResource(id = R.drawable.ic_arrow_back),
           contentDescription = null,
@@ -81,6 +89,7 @@ internal object PhoneScreen : Screen<PhoneRoute, Actions> {
           fieldModifier = Modifier
               .padding(horizontal = 16.dp)
               .fillMaxWidth()
+              .sentryTag("search-input")
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -127,7 +136,7 @@ internal object PhoneScreen : Screen<PhoneRoute, Actions> {
                 key = { index, c -> c.countryCode }
               ) { index, country ->
                 PhoneItem(
-                  modifier = Modifier.padding(horizontal = 16.dp),
+                  modifier = Modifier.padding(horizontal = 16.dp).sentryTag("country-item"),
                   country = country,
                   onClick = { selected ->
                     vm.handles.country(selected)
