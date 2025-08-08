@@ -10,6 +10,7 @@ import com.guavapay.paymentsdk.network.services.OrderApi.Models.GetOrderResponse
 import com.guavapay.paymentsdk.network.ssevents.SseEvent
 import com.guavapay.paymentsdk.network.ssevents.SseException
 import com.guavapay.paymentsdk.platform.manifest.manifestFields
+import io.sentry.SentryLevel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
@@ -54,6 +55,14 @@ internal fun RemoteOrderSubscription(lib: LibraryUnit) = flow {
           }
           is SseEvent.Failure -> {
             val code = event.code
+
+            lib.metrica.event(
+              message = "SSE Failed",
+              level = SentryLevel.ERROR,
+              tags = mapOf("category" to "sdk.network"),
+              contexts = mapOf("error" to mapOf("code" to code, "message" to event.message))
+            )
+
             if (code == null || code >= 500) {
               throw SseException(code ?: 999)
             } else if (code in 400..499) {
@@ -66,6 +75,13 @@ internal fun RemoteOrderSubscription(lib: LibraryUnit) = flow {
       }
       true
     }.getOrElse { error ->
+      lib.metrica.event(
+        message = "SSE Attempt Failed",
+        level = SentryLevel.ERROR,
+        tags = mapOf("category" to "sdk.network"),
+        contexts = mapOf("network" to mapOf("attempt" to sseAttempts + 1))
+      )
+
       lib.coroutine.handlers.logcat.handler(currentCoroutineContext(), error)
       lib.coroutine.handlers.metrica.handler(currentCoroutineContext(), error)
 
@@ -81,6 +97,13 @@ internal fun RemoteOrderSubscription(lib: LibraryUnit) = flow {
 
   suspend fun runPollingFallback() {
     e("Entering polling fallback for order ${payload.orderId}")
+
+    lib.metrica.event(
+      message = "SSE Fallback Polling",
+      level = SentryLevel.WARNING,
+      tags = mapOf("category" to "sdk.network"),
+    )
+
     isInFallback = true
     fallbackFailures = 0
 
@@ -124,7 +147,21 @@ internal fun RemoteOrderSubscription(lib: LibraryUnit) = flow {
         fallbackFailures++
         e("Polling fallback failure $fallbackFailures for order ${payload.orderId}")
 
+        lib.metrica.event(
+          message = "SSE Fallback Polling failed",
+          level = SentryLevel.WARNING,
+          tags = mapOf("category" to "sdk.network"),
+          contexts = mapOf("network" to mapOf("failure" to fallbackFailures))
+        )
+
         if (fallbackFailures >= 5) {
+          lib.metrica.event(
+            message = "SSE Fallback Polling Max Retries Exceed",
+            level = SentryLevel.ERROR,
+            tags = mapOf("category" to "sdk.network"),
+            contexts = mapOf("network" to mapOf("failures" to fallbackFailures))
+          )
+
           backgroundJob.cancel()
           throw IOException("Connection error: Maximum polling fallback failures reached")
         }
@@ -143,6 +180,12 @@ internal fun RemoteOrderSubscription(lib: LibraryUnit) = flow {
       }
     } else if (!isInFallback) {
       e("Maximum SSE connection attempts reached for order ${payload.orderId}, switching to polling fallback")
+      lib.metrica.event(
+        message = "SSE Max Retries Exceed",
+        level = SentryLevel.ERROR,
+        tags = mapOf("category" to "sdk.network"),
+        contexts = mapOf("network" to mapOf("attempts" to sseAttempts))
+      )
       runPollingFallback()
       break
     }
