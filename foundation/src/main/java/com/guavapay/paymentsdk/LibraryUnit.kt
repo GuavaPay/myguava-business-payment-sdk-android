@@ -39,6 +39,7 @@ internal class LibraryUnit(val context: Context) {
   fun initialize(): LibraryUnit {
     i("Starting initialization of library components")
     initialize.forEach(KProperty0<*>::invoke)
+    metrica.breadcrumb("SDK → Pre-Initialized", category = "sdk.lifecycle", type = "info")
     i("Finished initialization of library components")
     return this
   }

@@ -48,6 +48,7 @@ internal class PaymentGatewayActivity : ComponentActivity() {
   override fun onResume() {
     super.onResume().also { i("SDK activity resuming") }
     enableSecureFlags()
+    from(this).metrica.breadcrumb("SDK → Initialized", category = "sdk.lifecycle", type = "info")
   }
 
   override fun onPause() {
@@ -57,6 +58,7 @@ internal class PaymentGatewayActivity : ComponentActivity() {
   }
 
   override fun onDestroy() {
+    from(this).metrica.breadcrumb("SDK → Finish", category = "sdk.lifecycle", type = "info")
     super.onDestroy().also { i("SDK activity destroying") }
   }
 
@@ -73,6 +75,7 @@ internal class PaymentGatewayActivity : ComponentActivity() {
 
   private fun finishWithResult(result: PaymentResult) {
     i("Requested finish SDK activity with result: $result")
+    from(this).metrica.breadcrumb("Payment → Finished: ${result::class.simpleName}", category = "payment.status", type = "info")
     Intent().apply {
       when (result) {
         is Success -> {
