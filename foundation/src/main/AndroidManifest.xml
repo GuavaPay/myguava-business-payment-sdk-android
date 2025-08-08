@@ -24,5 +24,10 @@
         android:name="com.guavapay.paymentsdk.LibraryZygote"
         android:value="androidx.startup" />
     </provider>
+
+    <meta-data
+      android:name="io.sentry.auto-init"
+      android:value="false"
+      tools:node="merge"/>
   </application>
 </manifest>
