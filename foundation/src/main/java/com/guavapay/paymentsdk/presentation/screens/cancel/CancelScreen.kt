@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalComposeUiApi::class)
+
 package com.guavapay.paymentsdk.presentation.screens.cancel
 
 import androidx.compose.foundation.background
@@ -17,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -30,12 +33,14 @@ import com.guavapay.paymentsdk.presentation.navigation.rememberNavBackStack
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
 import com.guavapay.paymentsdk.presentation.screens.Screen
 import com.guavapay.paymentsdk.presentation.screens.cancel.CancelScreen.Actions
+import io.sentry.compose.SentryModifier.sentryTag
+import io.sentry.compose.SentryTraced
 import java.io.Serializable
 
 internal object CancelScreen : Screen<Route.CancelRoute, Actions> {
   data class Actions(val finish: (PaymentResult) -> Unit = @JvmSerializableLambda {}) : Serializable
 
-  @Composable override fun invoke(nav: SnapshotStateList<Route>, route: Route.CancelRoute, actions: Actions) {
+  @Composable override fun invoke(nav: SnapshotStateList<Route>, route: Route.CancelRoute, actions: Actions) = SentryTraced("cancel-screen") {
     val scroll = rememberScrollState()
 
     Column(
@@ -81,7 +86,7 @@ internal object CancelScreen : Screen<Route.CancelRoute, Actions> {
 
       Button(
         onClick = { nav.removeLastOrNull() },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().sentryTag("continue-payment-button"),
         style = Button.primary()
       ) {
         Text(text = stringResource(R.string.continue_payment))
@@ -91,7 +96,7 @@ internal object CancelScreen : Screen<Route.CancelRoute, Actions> {
 
       Button(
         onClick = { actions.finish(PaymentResult.Cancel) },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().sentryTag("cancel-payment-button"),
         style = Button.secondary()
       ) {
         Text(text = stringResource(R.string.cancel_payment))
