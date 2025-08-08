@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalComposeUiApi::class)
+
 package com.guavapay.paymentsdk.presentation.screens.management
 
 import androidx.compose.foundation.background
@@ -18,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -33,12 +36,14 @@ import com.guavapay.paymentsdk.presentation.platform.Text
 import com.guavapay.paymentsdk.presentation.platform.annotated
 import com.guavapay.paymentsdk.presentation.screens.Screen
 import com.guavapay.paymentsdk.presentation.screens.management.CardRemoveScreen.Actions
+import io.sentry.compose.SentryModifier.sentryTag
+import io.sentry.compose.SentryTraced
 import java.io.Serializable
 
 internal object CardRemoveScreen : Screen<CardRemoveRoute, Actions> {
   object Actions : Serializable { private fun readResolve(): Any = Actions }
 
-  @Composable override fun invoke(nav: SnapshotStateList<Route>, route: CardRemoveRoute, actions: Actions) {
+  @Composable override fun invoke(nav: SnapshotStateList<Route>, route: CardRemoveRoute, actions: Actions) = SentryTraced("card-remove-screen") {
     val scroll = rememberScrollState()
 
     Column(
@@ -91,7 +96,7 @@ internal object CardRemoveScreen : Screen<CardRemoveRoute, Actions> {
           nav.removeLastOrNull()
           route.onDeleteConfirmed(route.cardId)
         },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().sentryTag("delete-button"),
         style = Button.danger()
       ) {
         Text(
@@ -104,7 +109,7 @@ internal object CardRemoveScreen : Screen<CardRemoveRoute, Actions> {
 
       Button(
         onClick = { nav.removeLastOrNull() },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().sentryTag("cancel-button"),
         style = Button.secondary()
       ) {
         Text(
