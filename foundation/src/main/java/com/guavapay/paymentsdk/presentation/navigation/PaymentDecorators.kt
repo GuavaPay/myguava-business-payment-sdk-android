@@ -11,6 +11,7 @@ import androidx.navigation3.runtime.NavEntryDecorator
 import androidx.navigation3.runtime.navEntryDecorator
 import androidx.navigation3.ui.LocalEntriesToRenderInCurrentScene
 import com.guavapay.paymentsdk.logging.d
+import com.guavapay.paymentsdk.rememberLibraryUnit
 
 @Composable internal inline fun rememberLoggingNavEntryDecorator(
   noinline nameOf: (Any) -> String = { it::class.simpleName ?: it.toString() },
@@ -29,11 +30,38 @@ internal fun LoggingNavEntryDecorator(
       LaunchedEffect(key) {
         onEnter("Navigation action executed: → ${nameOf(key)}")
       }
-
       DisposableEffect(key) {
         onDispose { onExit("Navigation action executed: ← ${nameOf(key)}") }
       }
       entry.content(key)
+    }
+  }
+}
+
+@Composable internal fun rememberMetricaNavEntryDecorator(): NavEntryDecorator<Any> {
+  val lib = rememberLibraryUnit()
+  return navEntryDecorator { entry ->
+    val key = entry.key
+    if (LocalEntriesToRenderInCurrentScene.current.contains(key)) {
+      key(key) {
+        LaunchedEffect(key) {
+          lib.metrica.breadcrumb(
+            message = "Navigation: -> ${key::class.simpleName}",
+            category = "navigation",
+            type = "navigation"
+          )
+        }
+        DisposableEffect(key) {
+          onDispose {
+            lib.metrica.breadcrumb(
+              message = "Navigation: <- ${key::class.simpleName}",
+              category = "navigation",
+              type = "navigation",
+            )
+          }
+        }
+        entry.content(key)
+      }
     }
   }
 }
