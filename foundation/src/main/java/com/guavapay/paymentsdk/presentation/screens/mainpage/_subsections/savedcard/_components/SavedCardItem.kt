@@ -50,6 +50,7 @@ import com.guavapay.paymentsdk.presentation.components.atoms.Radio
 import com.guavapay.paymentsdk.presentation.components.atoms.TextField
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
 import com.guavapay.paymentsdk.presentation.platform.rememberCvcPeekState
+import io.sentry.compose.SentryModifier.sentryTag
 
 internal object SavedCardItem {
   data class Actions(
@@ -149,7 +150,8 @@ internal object SavedCardItem {
           Radio(
             selected = isSelected,
             onClick = if (enabled) ({ actions.onClick() }) else null,
-            enabled = enabled
+            enabled = enabled,
+            modifier = Modifier.sentryTag("select-card-radio")
           )
 
           Spacer(Modifier.size(4.dp))
@@ -166,7 +168,8 @@ internal object SavedCardItem {
         TextField(
           modifier = Modifier
             .height(48.dp)
-            .width(92.dp),
+            .width(92.dp)
+            .sentryTag("cvv-input"),
           value = cvvValue,
           maxLength = scheme.cvc,
           onValueChange = {
@@ -191,7 +194,8 @@ internal object SavedCardItem {
       ) {
         ContextMenu(
           onDeleteClick = actions.onDelete,
-          onEditClick = actions.onEdit
+          onEditClick = actions.onEdit,
+          modifier = Modifier.sentryTag("context-menu")
         )
       }
 
@@ -200,7 +204,8 @@ internal object SavedCardItem {
         onClick = {
           menuOpen = !menuOpen
           actions.onMenu()
-        }
+        },
+        modifier = Modifier.sentryTag("menu-button-toggle")
       )
     }
 
