@@ -20,7 +20,7 @@ import com.guavapay.paymentsdk.presentation.platform.remember
 import com.guavapay.paymentsdk.rememberLibraryUnit
 import kotlinx.coroutines.launch
 
-@Composable internal fun GPayButton(orchestrator: GPayOrchestrator, result: (GPayResult) -> Unit) {
+@Composable internal fun GPayButton(modifier: Modifier, orchestrator: GPayOrchestrator, result: (GPayResult) -> Unit) {
   val isReady by orchestrator.isReady.collectAsStateWithLifecycle()
   val isProcessing by orchestrator.isProcessing.collectAsStateWithLifecycle()
   val sizes = LocalSizesProvider.current
@@ -45,7 +45,7 @@ import kotlinx.coroutines.launch
   PayButton(
     onClick = { PaymentGatewayCoroutineScope().launch { result(orchestrator.start()) } },
     allowedPaymentMethods = payload,
-    modifier = Modifier.fillMaxWidth().height(sizes.button().height),
+    modifier = modifier.fillMaxWidth().height(sizes.button().height),
     theme = if (isSystemInDarkTheme()) ButtonTheme.Light else ButtonTheme.Dark,
     type = type,
     radius = 8.dp,
