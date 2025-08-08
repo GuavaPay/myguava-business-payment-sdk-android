@@ -24,8 +24,8 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
     isEnableUserInteractionBreadcrumbs = true
     isAttachThreads = true
 
-    release = "sdk@1.5.0"
-    dist = "public.release@1.5.0"
+    release = "sdk@0.5.2"
+    dist = "public.release@0.5.2"
   }
 
   private val globalScope = Scope(options)
