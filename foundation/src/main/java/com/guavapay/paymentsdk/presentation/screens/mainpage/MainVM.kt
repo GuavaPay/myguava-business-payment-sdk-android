@@ -214,17 +214,22 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
     updateFields { it.copy(cardHolderNameAvailable = instruments.card?.flags?.allowCardHolderName == true) }
 
     RemoteOrderSubscription(lib)
-      .onStart { busy() }
+      .onStart {
+        busy()
+        lib.metrica.breadcrumb("Fetch-Started", "Sdk Order", "state")
+      }
       .distinctUntilChanged()
       .onEach {
         d("Order stream: status=${it.order.status} id=${it.order.id}")
         onOrder(it)
+        lib.metrica.breadcrumb("Fetch-Finished", "Sdk Order", "state", data = mapOf("status" to it.order.status, "order_id" to it.order.id))
         unbusy()
       }
       .catch {
         unbusy()
         if (it !is CancellationException) {
           with(UnknownException(it)) {
+            lib.metrica.breadcrumb("Fetch-Error", "Sdk Order", "error", data = mapOf("error_type" to javaClass.simpleName, "error_msg" to (message ?: "")))
             fatal(this)
             throw UnknownException(this)
           }
@@ -233,6 +238,9 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
       .launch()
 
     state
+      .onStart {
+        lib.metrica.breadcrumb("Pan-Initiated", "Sdk Validation", "state")
+      }
       .map { it.fields.pan.filter(Char::isDigit) }
       .distinctUntilChanged()
       .filter { it.length in PAN_MIN..PAN_MAX }
@@ -245,9 +253,11 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
         if (it !is CancellationException) {
           if (it is IntegrationException.ClientError) {
             w("Card range client error code=${it.code}")
+            lib.metrica.breadcrumb("Pan-Error", "Sdk Validation", "error", data = mapOf("code" to it.code))
             fieldError()
           } else {
             with(UnknownException(it)) {
+              lib.metrica.breadcrumb("Pan-Error", "Sdk Validation", "error", data = mapOf("error_type" to javaClass.simpleName, "error_msg" to (message ?: "")))
               fatal(this)
               throw UnknownException(this)
             }
@@ -454,6 +464,13 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
           panCategory = data.product?.category
         )
       }
+
+      lib.metrica.breadcrumb("Pan-Resolved", "Sdk Validation", "state", data = mapOf(
+          "scheme" to (data.cardScheme?.name ?: ""),
+          "category" to (data.product?.category?.name ?: ""),
+          "pan_len" to pan.length
+        )
+      )
     }
   }
 
@@ -520,6 +537,8 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
         return
       }
 
+      lib.metrica.breadcrumb("Pay-Initiated", "Sdk Payment", "action", data = mapOf("method" to "card"))
+
       launch(ExceptionHandler { e -> _effects.trySend(Effect.AbortError(UnknownException(e))) }) {
         val s = state.value
         executeCardPayment(
@@ -542,6 +561,8 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
       val cardId = s.saved?.selectedCardId ?: return
       val cardCvv = s.saved.cvvInput
 
+      lib.metrica.breadcrumb("Pay-Initiated", "Sdk Payment", "action", data = mapOf("method" to "saved_card"))
+
       launch(ExceptionHandler { e -> _effects.trySend(Effect.AbortError(UnknownException(e))) }) {
         executeCardPayment(
           paymentMethod = OrderApi.Models.PaymentMethod(type = TYPE_BINDING, bindingId = cardId, cvv2 = cardCvv),
@@ -552,6 +573,8 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
     }
 
     fun gpay(result: GPayResult) {
+      lib.metrica.breadcrumb("Pay-Initiated", "Sdk Payment", "action", data = mapOf("method" to "google_pay", "result" to result::class.simpleName))
+
       launch(ExceptionHandler { e -> _effects.trySend(Effect.AbortError(UnknownException(e))) }) {
         when (result) {
           is GPayResult.Success -> executeGooglePayPayment(result.data, bindingCreationIsNeeded = state.value.saving)
@@ -577,6 +600,8 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
       try {
         busy()
 
+        lib.metrica.breadcrumb("Payment-Execute-Initiated", "Sdk Payment", "action", data = mapOf("method" to paymentMethod.type, "create_binding" to bindingCreationIsNeeded))
+
         val order = internal.order ?: throw UnknownException(IllegalStateException("Order data not available"))
         val orderId = order.id
 
@@ -600,6 +625,7 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
         val resp = RemoteExecutePayment(lib, orderId, req)
         threeDs.handleIfNeeded(resp, orderId)?.let { _effects.send(it) }
       } catch (t: Exception) {
+        lib.metrica.breadcrumb("Payment-Execute-Error", "Sdk Payment", "error", data = mapOf("error_type" to t.javaClass.simpleName, "error_msg" to (t.message ?: "")))
         unbusy()
         retrow(t)
       }
@@ -632,6 +658,8 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
       try {
         busy()
 
+        lib.metrica.breadcrumb("Payment-Execute-Initiated", "Sdk Payment", "action", data = mapOf("method" to TYPE_GPAY, "create_binding" to bindingCreationIsNeeded))
+
         val order = internal.order ?: throw IllegalStateException("Order data not available")
         val orderId = order.id
 
@@ -660,6 +688,7 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
         val resp = RemoteExecutePayment(lib, orderId, req)
         threeDs.handleIfNeeded(resp, orderId)?.let { _effects.send(it) }
       } catch (t: Exception) {
+        lib.metrica.breadcrumb("Payment-Execute-Error", "Sdk Payment", "error", data = mapOf("method" to TYPE_GPAY, "error_type" to t.javaClass.simpleName, "error_msg" to (t.message ?: "")))
         unbusy()
         retrow(t)
       }
@@ -738,6 +767,9 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
     }
 
     fun toggleSave(save: Boolean) = update { it.copy(saving = save) }
+      .also {
+        lib.metrica.breadcrumb("SaveCard-Toggled", "Sdk UI", "action", data = mapOf("enabled" to save))
+      }
 
     fun panFocusLost() {
       val digits = state.value.fields.pan.filter(Char::isDigit)
@@ -815,9 +847,14 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
     fun unbusy() = update { it.copy(busy = false) }
 
     fun setPaymentScreenMode(mode: State.Mode) = update { it.copy(mode = mode) }
+      .also {
+        lib.metrica.breadcrumb("Mode-Switched", "Sdk UI", "action", data = mapOf("mode" to mode.name))
+      }
 
     fun selectSavedCard(id: String) = update {
       it.copy(saved = it.saved?.copy(selectedCardId = id, cvvInput = "", cvvError = null))
+    }.also {
+      lib.metrica.breadcrumb("SavedCard-Selected", "Sdk UI", "action")
     }
 
     fun savedCardCvv(cvv: String) {
@@ -840,6 +877,8 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
         val card = state.value.saved?.cards?.find { it.id == id } ?: return@launch
         val name = card.cardName + " *" + card.maskedPan.takeLast(4)
         _effects.send(Effect.ConfirmDeleteCard(cardId = id, cardName = name, onDeleteConfirmed = ::confirmDeleteCard))
+
+        lib.metrica.breadcrumb("SavedCard-Delete-Requested", "Sdk UI", "action")
       }
     }
 
@@ -847,6 +886,8 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
       update { it.copy(saved = it.saved?.copy(isLoadingCards = true)) }
 
       launch {
+        lib.metrica.breadcrumb("SavedCard-Delete-Initiated", "Sdk Payment", "action")
+
         runCatching { RemoteDeleteBinding(lib, id) }
           .onFailure { if (it !is IntegrationException.NoResponseError) e("Delete binding failed: ${it.message}", it) else retrow(it) }
 
@@ -855,6 +896,7 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
 
         handle.setMode(mode)
         update { it.copy(mode = mode, saved = it.saved?.copy(cards = cards, isLoadingCards = false)) }
+        lib.metrica.breadcrumb("SavedCard-Delete-Completed", "Sdk Payment", "state", data = mapOf("remaining_cards" to cards.size))
       }
     }
 
@@ -862,6 +904,7 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
       launch {
         val name = state.value.saved?.cards?.find { it.id == id }?.cardName ?: return@launch
         _effects.send(Effect.EditCard(cardId = id, cardName = name, onEditConfirmed = ::confirmEditCard))
+        lib.metrica.breadcrumb("SavedCard-Edit-Requested", "Sdk UI", "action")
       }
     }
 
@@ -869,6 +912,8 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
       update { it.copy(saved = it.saved?.copy(isLoadingCards = true)) }
 
       launch {
+        lib.metrica.breadcrumb("SavedCard-Edit-Initiated", "Sdk Payment", "action")
+
         runCatching { RemoteEditBinding(lib, id, name) }
           .onFailure { if (it !is IntegrationException.NoResponseError) e("Edit binding failed: ${it.message}", it) else retrow(it) }
 
@@ -877,6 +922,7 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
 
         handle.setMode(mode)
         update { it.copy(mode = mode, saved = it.saved?.copy(cards = cards, isLoadingCards = false)) }
+        lib.metrica.breadcrumb("SavedCard-Edit-Finished", "Sdk Payment", "state")
       }
     }
 

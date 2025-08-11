@@ -40,6 +40,8 @@ internal class PhoneVM(private val lib: LibraryUnit, private val handle: SavedSt
   val state: StateFlow<State> = _state.asStateFlow()
 
   init {
+    lib.metrica.breadcrumb("Phone-Init", "Sdk UI", "state")
+
     countries()
 
     launch {
@@ -54,6 +56,8 @@ internal class PhoneVM(private val lib: LibraryUnit, private val handle: SavedSt
         queryFlow.debounce(100).distinctUntilChanged(),
         loading
       ) { list, qd, isLoading ->
+        lib.metrica.breadcrumb("Phone-Filter", "Sdk UI", "action", data = mapOf("query" to qd))
+
         val t = qd.trim()
         val filtered = if (t.isEmpty()) list else list.filter { c ->
           c.countryName.contains(t, true) ||
@@ -71,10 +75,13 @@ internal class PhoneVM(private val lib: LibraryUnit, private val handle: SavedSt
     launch {
       try {
         loading.update { true }
+        lib.metrica.breadcrumb("Phone-Load-Started", "Sdk UI", "state")
         val list = LocalCountries(lib)
         countries.update { list }
+        lib.metrica.breadcrumb("Phone-Load-Finished", "Sdk UI", "state", data = mapOf("count" to list.size))
       } catch (e: Exception) {
         countries.update { emptyList() }
+        lib.metrica.breadcrumb("Phone-Load-Error", "Sdk UI", "error", data = mapOf("error" to (e.message ?: "")))
         retrow(e)
       } finally {
         loading.update { false }
@@ -84,7 +91,10 @@ internal class PhoneVM(private val lib: LibraryUnit, private val handle: SavedSt
 
   val handles = Handles(); inner class Handles {
     fun search(q: String) { handle["query"] = q }
-    fun country(country: Country) = route.callback(country.phoneCode, country.countryCode)
+    fun country(country: Country) {
+      lib.metrica.breadcrumb("Phone-Selected", "Sdk UI", "action", data = mapOf("country_code" to country.countryCode))
+      route.callback(country.phoneCode, country.countryCode)
+    }
   }
 
   data class State(val countries: List<Country> = emptyList(), val searchQuery: String = "", val isLoading: Boolean = false)

@@ -57,6 +57,8 @@ internal class ContactVM(private val lib: LibraryUnit, private val handle: Saved
   val state: StateFlow<State> = _state.asStateFlow()
 
   init {
+    lib.metrica.breadcrumb("Contact-Init", "Sdk UI", "state")
+
     collectDebounced(
       scope = x.scope,
       source = state,
@@ -80,6 +82,7 @@ internal class ContactVM(private val lib: LibraryUnit, private val handle: Saved
   val handles = Handles() ; inner class Handles {
     fun email(email: String) {
       handle["email"] = email
+      lib.metrica.breadcrumb("Contact-Email-Changed", "Sdk UI", "action")
       _state.update { it.copy(email = email) }
       val newState = when {
         email.isBlank() -> FieldState.EMPTY
@@ -92,6 +95,7 @@ internal class ContactVM(private val lib: LibraryUnit, private val handle: Saved
     fun phone(phone: String) {
       val digits = phone.filter { it.isDigit() }
       val clipped = digits.take(maxNsnLen(_state.value.countryIso))
+      lib.metrica.breadcrumb("Contact-Phone-Changed", "Sdk UI", "action")
       handle["phone"] = clipped
       _state.update { it.copy(phone = clipped) }
       val newState = when {
@@ -105,6 +109,7 @@ internal class ContactVM(private val lib: LibraryUnit, private val handle: Saved
     fun country(countryCode: String, countryIso: String) {
       handle["countryCode"] = countryCode
       handle["countryIso"] = countryIso
+      lib.metrica.breadcrumb("Contact-Country-Changed", "Sdk UI", "action", data = mapOf("iso" to countryIso))
       _state.update { it.copy(countryCode = countryCode, countryIso = countryIso) }
       val p = _state.value.phone
       val newState = when {
@@ -118,6 +123,7 @@ internal class ContactVM(private val lib: LibraryUnit, private val handle: Saved
     fun onContinue() {
       val s = _state.value
       finalizeEmailNow(s.email)
+      lib.metrica.breadcrumb("Contact-Continue-Clicked", "Sdk UI", "action")
       finalizePhoneNow(s.phone, s.countryIso, s.countryCode)
       val x = _state.value
       if (x.isValid) {

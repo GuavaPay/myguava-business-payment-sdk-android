@@ -25,6 +25,7 @@ internal class ThreedsInterconnect(private val lib: LibraryUnit, private val ui:
 
   suspend fun handleIfNeeded(response: OrderApi.Models.ExecutePaymentResponse, orderId: String): MainVM.Effect.Require3ds? {
     val create = response.requirements?.threedsSdkCreateTransaction ?: return null
+    lib.metrica.breadcrumb("3ds-Init", "Sdk 3ds", "state")
 
     val dsId = create.directoryServerID!!
     val version = create.messageVersion!!
@@ -50,6 +51,8 @@ internal class ThreedsInterconnect(private val lib: LibraryUnit, private val ui:
       uiCustomization = ui()
     )
 
+    lib.metrica.breadcrumb("3ds-Tx-Created", "Sdk 3ds", "state", data = mapOf("ds_id" to dsId, "version" to version))
+
     val auth = tx!!.createAuthenticationRequestParameters()
     val cont = OrderApi.Models.ContinuePaymentRequest(threedsSdkData = OrderApi.Models.ThreedsSDKData(name = "3dssdk", version = "0.5.0", packedAuthenticationData = auth.toPaymentApiString()))
 
@@ -61,11 +64,15 @@ internal class ThreedsInterconnect(private val lib: LibraryUnit, private val ui:
       threeDSRequestorAppURL = THREE_DS_REQUESTOR_APP_URL,
       text = encoded
     )
+
+    lib.metrica.breadcrumb("3ds-Challenge-Prepared", "Sdk 3ds", "state")
     return MainVM.Effect.Require3ds(params, tx!!)
   }
 
-  fun prepareChallengeConfig(params: ChallengeParameters): ChallengeRequestExecutor.Config? =
-    tx?.let { createChallengeArgs(it, params).getOrNull() }
+  fun prepareChallengeConfig(params: ChallengeParameters): ChallengeRequestExecutor.Config? {
+    lib.metrica.breadcrumb("3ds-Challenge-Config-Requested", "Sdk 3ds", "action")
+    return tx?.let { createChallengeArgs(it, params).getOrNull() }
+  }
 
   fun createChallengeArgs(
     transaction: Transaction,
