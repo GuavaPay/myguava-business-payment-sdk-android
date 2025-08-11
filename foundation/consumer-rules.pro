@@ -42,6 +42,10 @@
 -keep class com.guavapay.paymentsdk.gateway.banking.PaymentResult { *; }
 -keep class com.guavapay.paymentsdk.gateway.banking.PaymentResult$* { *; }
 
+-keep class com.guavapay.paymentsdk.gateway.banking.GatewayException { *; }
+-keep class com.guavapay.paymentsdk.gateway.banking.GatewayException$* { *; }
+-keep class com.guavapay.paymentsdk.network.ssevents.SseException { *; }
+
 -keep class com.guavapay.paymentsdk.gateway.** { *; }
 
 -keep class com.guavapay.paymentsdk.network.services.BindingsApi.** { *; }
@@ -84,3 +88,5 @@
 -keepnames class com.guavapay.paymentsdk.presentation.navigation.PaymentRoutes$* { *; }
 -keepnames class com.guavapay.paymentsdk.presentation.navigation.Route { *; }
 -keepnames class com.guavapay.paymentsdk.presentation.navigation.Route$* { *; }
+
+-keep class com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM$State$Mode { *; }
