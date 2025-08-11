@@ -94,7 +94,7 @@ Next, add the Payment SDK dependency to your module's `build.gradle.kts` file:
 
 ```kotlin
 dependencies {
-  implementation("com.guavapay.myguava.business:payment-sdk-android:0.5.1")
+  implementation("com.guavapay.myguava.business:payment-sdk-android:0.5.2")
 }
 ```
 
