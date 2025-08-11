@@ -24,9 +24,9 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
     isEnableUserInteractionBreadcrumbs = true
     isAttachThreads = true
 
-    proguardUuid = "f5b174b2-be82-4da3-9c5e-fc59d02ed459"
-    release = "sdk@0.5.2"
-    dist = "0.5.2.public.release"
+    proguardUuid = "7FC967FA-07F0-48E6-A3B7-EE86703DB9E6"
+    release = "sdk@0.5.3"
+    dist = "0.5.3.public.release"
   }
 
   private val globalScope = Scope(options)
