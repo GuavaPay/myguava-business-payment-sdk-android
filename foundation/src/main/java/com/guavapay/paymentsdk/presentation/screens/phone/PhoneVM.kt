@@ -4,11 +4,14 @@ package com.guavapay.paymentsdk.presentation.screens.phone
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.guavapay.paymentsdk.LibraryUnit
 import com.guavapay.paymentsdk.integrations.local.Country
 import com.guavapay.paymentsdk.integrations.local.LocalCountries
 import com.guavapay.paymentsdk.presentation.navigation.Route.PhoneRoute
+import com.guavapay.paymentsdk.presentation.platform.coroutinify
+import com.guavapay.paymentsdk.presentation.platform.retrow
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,9 +20,18 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
 internal class PhoneVM(private val lib: LibraryUnit, private val handle: SavedStateHandle, private val route: PhoneRoute) : ViewModel() {
+  private val x by coroutinify(this, lib)
+
+  private inline fun launch(
+    context: CoroutineContext = EmptyCoroutineContext,
+    handler: CoroutineExceptionHandler? = null,
+    crossinline block: suspend CoroutineScope.() -> Unit
+  ) = x.launch(context, handler, block)
+
   private val countries = MutableStateFlow<List<Country>>(emptyList())
   private val queryFlow: StateFlow<String> = handle.getStateFlow("query", "")
   private val loading = MutableStateFlow(true)
@@ -30,13 +42,13 @@ internal class PhoneVM(private val lib: LibraryUnit, private val handle: SavedSt
   init {
     countries()
 
-    viewModelScope.launch {
+    launch {
       queryFlow.collect { q ->
         _state.update { it.copy(searchQuery = q) }
       }
     }
 
-    viewModelScope.launch {
+    launch {
       combine(
         countries,
         queryFlow.debounce(100).distinctUntilChanged(),
@@ -56,13 +68,14 @@ internal class PhoneVM(private val lib: LibraryUnit, private val handle: SavedSt
   }
 
   private fun countries() {
-    viewModelScope.launch {
+    launch {
       try {
         loading.update { true }
         val list = LocalCountries(lib)
         countries.update { list }
-      } catch (_: Exception) {
+      } catch (e: Exception) {
         countries.update { emptyList() }
+        retrow(e)
       } finally {
         loading.update { false }
       }

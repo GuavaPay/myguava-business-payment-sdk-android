@@ -10,6 +10,7 @@ import com.guavapay.paymentsdk.logging.d
 import com.guavapay.paymentsdk.logging.e
 import com.guavapay.paymentsdk.logging.w
 import com.guavapay.paymentsdk.platform.coroutines.timeouting
+import com.guavapay.paymentsdk.presentation.platform.retrow
 import kotlinx.coroutines.withContext
 import retrofit2.Response
 
@@ -91,7 +92,7 @@ private suspend inline fun <reified T> retry(attempts: Int, crossinline operatio
 
       if (attempt == attempts - 1 || e !is ServerError) {
         e("An error occurred while executing the integration operation for gathering ${T::class.simpleName}", e)
-        throw e
+        retrow(e)
       } else {
         w("An server error occurred while executing the integration operation for gathering ${T::class.simpleName} (attempt: $attempt), retrying...")
       }

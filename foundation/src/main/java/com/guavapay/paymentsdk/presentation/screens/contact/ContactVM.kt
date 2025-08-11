@@ -5,7 +5,6 @@ package com.guavapay.paymentsdk.presentation.screens.contact
 import androidx.compose.ui.text.intl.Locale
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.google.i18n.phonenumbers.NumberParseException
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberType
@@ -16,6 +15,9 @@ import com.guavapay.paymentsdk.presentation.platform.FIELD_DEBOUNCE_MS
 import com.guavapay.paymentsdk.presentation.platform.FieldState
 import com.guavapay.paymentsdk.presentation.platform.Text
 import com.guavapay.paymentsdk.presentation.platform.collectDebounced
+import com.guavapay.paymentsdk.presentation.platform.coroutinify
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,11 +26,20 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import org.apache.commons.validator.routines.EmailValidator
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.math.max
 
 internal class ContactVM(private val lib: LibraryUnit, private val handle: SavedStateHandle, private val route: ContactRoute) : ViewModel() {
+  private val x by coroutinify(this, lib)
+
+  private inline fun launch(
+    context: CoroutineContext = EmptyCoroutineContext,
+    handler: CoroutineExceptionHandler? = null,
+    crossinline block: suspend CoroutineScope.() -> Unit
+  ) = x.launch(context, handler, block)
+
   private val phones = PhoneNumberUtil.getInstance()
   private val emails = EmailValidator.getInstance()
 
@@ -47,13 +58,13 @@ internal class ContactVM(private val lib: LibraryUnit, private val handle: Saved
 
   init {
     collectDebounced(
-      scope = viewModelScope,
+      scope = x.scope,
       source = state,
       selector = { it.email },
       block = ::finalizeEmail
     )
 
-    viewModelScope.launch {
+    launch {
       val phoneFlow = state.map { it.phone }.distinctUntilChanged().debounce(FIELD_DEBOUNCE_MS)
       val isoFlow = state.map { it.countryIso }.distinctUntilChanged()
       val ccFlow = state.map { it.countryCode }.distinctUntilChanged()
@@ -112,7 +123,7 @@ internal class ContactVM(private val lib: LibraryUnit, private val handle: Saved
       if (x.isValid) {
         val emailOrNull = x.email.takeIf(String::isNotBlank)
         val phoneOrNull = x.phone.takeIf(String::isNotBlank)?.let { "${x.countryCode}$it" }
-        viewModelScope.launch { route.callback(emailOrNull, phoneOrNull) }
+        launch { route.callback(emailOrNull, phoneOrNull) }
       }
     }
   }

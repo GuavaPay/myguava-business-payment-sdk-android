@@ -11,6 +11,7 @@ import com.guavapay.paymentsdk.network.ssevents.SseEvent
 import com.guavapay.paymentsdk.network.ssevents.SseException
 import com.guavapay.paymentsdk.platform.manifest.manifestFields
 import io.sentry.SentryLevel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
@@ -75,6 +76,8 @@ internal fun RemoteOrderSubscription(lib: LibraryUnit) = flow {
       }
       true
     }.getOrElse { error ->
+      if (error is CancellationException) return@getOrElse true
+
       lib.metrica.event(
         message = "SSE Attempt Failed",
         level = SentryLevel.ERROR,

@@ -33,6 +33,7 @@ import com.guavapay.paymentsdk.network.services.OrderApi.Models.GooglePayContext
 import com.guavapay.paymentsdk.network.services.OrderApi.Models.Order
 import com.guavapay.paymentsdk.platform.manifest.manifestFields
 import com.guavapay.paymentsdk.platform.threading.await
+import com.guavapay.paymentsdk.presentation.platform.retrow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -92,7 +93,7 @@ internal class GPayOrchestrator(private val context: Context, private val order:
     } catch (e: Exception) {
       _isReady.value = false
       _isContextReady.value = false
-      throw e
+      retrow(e)
     }
   }
 
@@ -178,7 +179,7 @@ internal class GPayOrchestrator(private val context: Context, private val order:
       _isReady.value = isReady
     } catch (e: Exception) {
       _isReady.value = false
-      throw e
+      retrow(e)
     }
   }
 }
