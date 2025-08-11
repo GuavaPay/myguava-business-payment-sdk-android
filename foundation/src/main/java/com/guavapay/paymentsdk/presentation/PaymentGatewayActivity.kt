@@ -29,7 +29,7 @@ import io.sentry.SentryLevel
 internal class PaymentGatewayActivity : ComponentActivity() {
   init {
     i("SDK activity initialization started")
-    from(this).metrica.breadcrumb("Post-Initialized", category = "sdk.lifecycle", type = "info")
+    from(this).metrica.breadcrumb("Post-Initialized", category = "Sdk Lifecycle", type = "info")
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,7 +37,7 @@ internal class PaymentGatewayActivity : ComponentActivity() {
     ensureSdkState()
     enableSecureFlags()
     enableEdgeToEdge()
-    from(this).metrica.breadcrumb("Created", category = "sdk.lifecycle", type = "info")
+    from(this).metrica.breadcrumb("Created", category = "Sdk Lifecycle", type = "info")
     setContent { PaymentGatewayBottomSheet(::finishWithResult) }
   }
 
@@ -50,20 +50,20 @@ internal class PaymentGatewayActivity : ComponentActivity() {
 
   override fun onResume() {
     super.onResume().also { i("SDK activity resuming") }
-    from(this).metrica.breadcrumb("Resumed", category = "sdk.lifecycle", type = "info")
+    from(this).metrica.breadcrumb("Resumed", category = "Sdk Lifecycle", type = "info")
     enableSecureFlags()
-    from(this).metrica.breadcrumb("Initialized", category = "sdk.lifecycle", type = "info")
+    from(this).metrica.breadcrumb("Initialized", category = "Sdk Lifecycle", type = "info")
   }
 
   override fun onPause() {
     super.onPause().also { i("SDK activity pausing") }
-    from(this).metrica.breadcrumb("Paused", category = "sdk.lifecycle", type = "info")
+    from(this).metrica.breadcrumb("Paused", category = "Sdk Lifecycle", type = "info")
     val am = getSystemService(ACTIVITY_SERVICE) as ActivityManager
     am.appTasks.forEach { task -> task.setExcludeFromRecents(true) }
   }
 
   override fun onDestroy() {
-    from(this).metrica.breadcrumb("Finish", category = "sdk.lifecycle", type = "info")
+    from(this).metrica.breadcrumb("Finish", category = "Sdk Lifecycle", type = "info")
     from(this).metrica.close()
     super.onDestroy().also { i("SDK activity destroying") }
   }

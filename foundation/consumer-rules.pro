@@ -61,3 +61,26 @@
 -keep class * extends androidx.startup.Initializer {
     <init>();
 }
+
+-keep class androidx.lifecycle.ViewModelProvider$Factory { *; }
+-keep class * implements androidx.lifecycle.ViewModelProvider$Factory {
+    <methods>;
+}
+
+-keepclassmembers class androidx.lifecycle.ViewModelProvider$Factory {
+    public <methods>;
+}
+
+-keep class com.guavapay.paymentsdk.presentation.platform.ViewModelFactory { *; }
+
+-keep class androidx.lifecycle.ViewModelProvider { *; }
+-keep class androidx.lifecycle.viewmodel.CreationExtras { *; }
+-keep class androidx.lifecycle.viewmodel.** { *; }
+
+-keepclassmembers class * extends androidx.lifecycle.ViewModel {
+    <init>(...);
+}
+
+-keepnames class com.guavapay.paymentsdk.presentation.navigation.PaymentRoutes$* { *; }
+-keepnames class com.guavapay.paymentsdk.presentation.navigation.Route { *; }
+-keepnames class com.guavapay.paymentsdk.presentation.navigation.Route$* { *; }

@@ -47,10 +47,10 @@ internal fun LoggingNavEntryDecorator(
         LaunchedEffect(key) {
           lib.metrica.breadcrumb(
             message = "Navigation-Executed",
-            category = "sdk.navigation",
+            category = "Sdk Navigation",
             type = "action",
             data = mapOf(
-              "direction" to "→",
+              "direction" to "forward",
               "screen" to (key::class.simpleName ?: "Unknown")
             )
           )
@@ -60,10 +60,10 @@ internal fun LoggingNavEntryDecorator(
           onDispose {
             lib.metrica.breadcrumb(
               message = "Navigation-Executed",
-              category = "sdk.navigation",
+              category = "Sdk Navigation",
               type = "action",
               data = mapOf(
-                "direction" to "←",
+                "direction" to "backward",
                 "screen" to (key::class.simpleName ?: "Unknown")
               )
             )

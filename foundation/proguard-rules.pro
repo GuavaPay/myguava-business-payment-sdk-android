@@ -80,3 +80,7 @@
 -keepclassmembers class * extends androidx.lifecycle.ViewModel {
     <init>(...);
 }
+
+-keepnames class com.guavapay.paymentsdk.presentation.navigation.PaymentRoutes$* { *; }
+-keepnames class com.guavapay.paymentsdk.presentation.navigation.Route { *; }
+-keepnames class com.guavapay.paymentsdk.presentation.navigation.Route$* { *; }
