@@ -82,7 +82,7 @@ internal class PaymentGatewayActivity : ComponentActivity() {
   private fun finishWithResult(result: PaymentResult) {
     i("Requested finish SDK activity with result: $result")
 
-    from(this).metrica.breadcrumb("Finished", "payment.status", "info", mapOf("result" to result.toString()))
+    from(this).metrica.breadcrumb("Finished", "payment.status", "info", data = mapOf("result" to result.toString()))
 
     val level = when (result) {
       is Success -> SentryLevel.INFO
