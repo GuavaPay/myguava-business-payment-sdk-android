@@ -81,7 +81,10 @@ import kotlinx.coroutines.launch
 import java.io.Serializable
 
 internal object MainScreen : Screen<HomeRoute, Actions> {
-  data class Actions(val finish: (PaymentResult) -> Unit = @JvmSerializableLambda {}) : Serializable
+  data class Actions(
+    val finish: (PaymentResult) -> Unit = @JvmSerializableLambda {},
+    val showDialog: (Route) -> Unit = @JvmSerializableLambda {}
+  ) : Serializable
 
   @Composable override operator fun invoke(nav: SnapshotStateList<Route>, route: HomeRoute, actions: Actions) = SentryTraced("main-screen") {
     val lib = rememberLibraryUnit()
@@ -101,7 +104,7 @@ internal object MainScreen : Screen<HomeRoute, Actions> {
         is ChallengeResult.Failed,
         is ChallengeResult.ProtocolError,
         is ChallengeResult.RuntimeError,
-        is ChallengeResult.Timeout -> nav.add(AbortRoute())
+        is ChallengeResult.Timeout -> actions.showDialog(AbortRoute())
         is ChallengeResult.Succeeded -> Unit
       }
     }
@@ -115,18 +118,18 @@ internal object MainScreen : Screen<HomeRoute, Actions> {
         val repo = vm.handles.getChallengeRepositoryFactory(sdkTransactionId = tx.sdkTransactionId, uiCustomization = ui)
         PaymentGatewayCoroutineScope().launch {
           val init = repo.startChallenge(tx.createInitChallengeArgs(params, 10))
-          if (init is InitChallengeResult.Start) launcher.launch(init.challengeViewArgs) else nav.add(AbortRoute())
+          if (init is InitChallengeResult.Start) launcher.launch(init.challengeViewArgs) else actions.showDialog(AbortRoute())
         }
       }
 
       vm.effects.collect { effect ->
         when (effect) {
           is AskContacts -> nav.add(ContactRoute(effect.countryIso, effect.callback))
-          is AbortError -> nav.removeLastOrNull().also { nav.add(AbortRoute(effect.throwable)) }
+          is AbortError -> actions.showDialog(AbortRoute(effect.throwable))
           is ShowError -> Unit
           is AbortGuard -> Unit
-          is ConfirmDeleteCard -> nav.add(CardRemoveRoute(effect.cardId, effect.cardName, effect.onDeleteConfirmed))
-          is EditCard -> nav.add(CardEditRoute(effect.cardId, effect.cardName, effect.onEditConfirmed))
+          is ConfirmDeleteCard -> actions.showDialog(CardRemoveRoute(effect.cardId, effect.cardName, effect.onDeleteConfirmed))
+          is EditCard -> actions.showDialog(CardEditRoute(effect.cardId, effect.cardName, effect.onEditConfirmed))
           is Finish -> actions.finish(effect.result)
           is FocusPan -> panReq.requestFocus()
           is FocusExp -> expReq.requestFocus()
