@@ -10,6 +10,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.annotation.RememberInComposition
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.intl.Locale
@@ -59,7 +60,7 @@ private var pendingContinuation: Continuation<PaymentResult>? = null
  * @see rememberPaymentGateway
  * @author Pavel Erokhin (MairwunNx / GuavaAgent007)
  */
-@Stable open class PaymentGateway internal constructor() : Serializable {
+open class PaymentGateway @RememberInComposition internal constructor() : Serializable {
   /**
    * Starts the payment process.
    *

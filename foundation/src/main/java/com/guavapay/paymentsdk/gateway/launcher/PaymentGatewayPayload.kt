@@ -2,6 +2,7 @@ package com.guavapay.paymentsdk.gateway.launcher
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.annotation.RememberInComposition
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme
 import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit
@@ -26,7 +27,7 @@ import java.util.Locale
  * @property looknfeel A decorator for the main payment UI.
  * @author Pavel Erokhin (MairwunNx / GuavaAgent007)
  */
-data class PaymentGatewayPayload(
+data class PaymentGatewayPayload @RememberInComposition constructor(
   val orderId: String,
   val sessionToken: String,
   val locale: Locale? = null,
