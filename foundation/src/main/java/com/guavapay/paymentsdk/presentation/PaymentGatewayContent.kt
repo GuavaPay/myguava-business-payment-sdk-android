@@ -15,7 +15,9 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,13 +26,17 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +61,7 @@ import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.WIN
 import com.guavapay.paymentsdk.presentation.navigation.Navigation
 import com.guavapay.paymentsdk.presentation.navigation.Route
 import com.guavapay.paymentsdk.presentation.navigation.rememberNavBackStack
+import com.guavapay.paymentsdk.presentation.platform.LocalParentScrollState
 import com.guavapay.paymentsdk.presentation.platform.LocalTokensProvider
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
 
@@ -148,9 +155,7 @@ import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
     if (hasDialog && kb != null) kb.hide()
   }
 
-  Box(Modifier
-    .wrapContentSize(Alignment.BottomStart)
-    .widthIn(max = maxCardWidth)) {
+  Box(Modifier.wrapContentSize(Alignment.BottomStart).widthIn(max = maxCardWidth)) {
     Box(Modifier.graphicsLayer { translationY = offsetY }) {
       // Дикий костыль, зато красиво! Подложка под анимированную карточку, повторяющая размер карты.
       Box(
@@ -206,34 +211,39 @@ import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
 @Composable private fun DialogOverlay(route: Route, nav: SnapshotStateList<Route>, dialogRoutes: SnapshotStateList<Route>, dismiss: (PaymentResult) -> Unit) {
   val maxCardWidth = 500.dp
 
-  Box(
-    modifier = Modifier
-      .fillMaxSize()
-      .pointerInput(Unit) {
-        detectTapGestures {
-          dialogRoutes.removeLastOrNull()
-        }
-      },
-    contentAlignment = Alignment.Center
-  ) {
-    Card(
+  CompositionLocalProvider(LocalParentScrollState provides rememberScrollState()) {
+    Box(
       modifier = Modifier
-        .align(Alignment.Center)
-        .widthIn (max = maxCardWidth)
-        .padding(24.dp)
+        .fillMaxSize()
+        .verticalScroll(LocalParentScrollState.current)
         .pointerInput(Unit) {
-          detectTapGestures { /* Prevent click through */ }
+          detectTapGestures {
+            dialogRoutes.removeLastOrNull()
+          }
         },
-      colors = LocalTokensProvider.current.card(),
-      elevation = CardDefaults.cardElevation(8.dp),
-      shape = MaterialTheme.shapes.extraLarge,
+      contentAlignment = Alignment.Center
     ) {
-      Navigation.DialogContent(
-        route = route,
-        nav = nav,
-        dialogRoutes = dialogRoutes,
-        actions = Navigation.Actions(finish = dismiss)
-      )
+      Column(modifier = Modifier.align(Alignment.Center).widthIn(max = maxCardWidth)) {
+        Card(
+          modifier = Modifier
+            .padding(24.dp)
+            .pointerInput(Unit) {
+              detectTapGestures { /* Prevent click through */ }
+            },
+          colors = LocalTokensProvider.current.card(),
+          elevation = CardDefaults.cardElevation(8.dp),
+          shape = MaterialTheme.shapes.extraLarge,
+        ) {
+          Navigation.DialogContent(
+            route = route,
+            nav = nav,
+            dialogRoutes = dialogRoutes,
+            actions = Navigation.Actions(finish = dismiss)
+          )
+        }
+
+        Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
+      }
     }
   }
 }
