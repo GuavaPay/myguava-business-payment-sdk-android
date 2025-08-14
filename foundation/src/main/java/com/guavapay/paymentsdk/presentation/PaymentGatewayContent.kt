@@ -155,7 +155,7 @@ import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
     if (hasDialog && kb != null) kb.hide()
   }
 
-  Box(Modifier.wrapContentSize(Alignment.BottomStart).widthIn(max = maxCardWidth)) {
+  Box(Modifier.widthIn(max = maxCardWidth)) {
     Box(Modifier.graphicsLayer { translationY = offsetY }) {
       // Дикий костыль, зато красиво! Подложка под анимированную карточку, повторяющая размер карты.
       Box(
@@ -172,37 +172,43 @@ import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
       )
 
       // Основная карточка
-      Card(
+      Column(
         modifier = Modifier
-          .align(Alignment.BottomCenter)
-          .onSizeChanged { cardSize = it }
-          .fillMaxWidth()
-          .heightIn(
-            max = maxCardHeight
-          )
-          .windowInsetsPadding(WindowInsets.ime)
-          .shadow(0.dp)
-          .clip(
-            MaterialTheme.shapes.extraLarge.copy(
+        .align(Alignment.BottomCenter)
+        .onSizeChanged { cardSize = it }
+        .fillMaxWidth()
+        .heightIn(max = maxCardHeight)
+      ) {
+        CompositionLocalProvider(LocalParentScrollState provides rememberScrollState()) {
+          Card(
+            modifier = Modifier
+              .shadow(0.dp)
+              .clip(
+                MaterialTheme.shapes.extraLarge.copy(
+                  bottomStart = CornerSize(0),
+                  bottomEnd = CornerSize(0)
+                )
+              )
+              .animateContentSize(
+                animationSpec = tween(WINDOW_ANIMATION_DURATION)
+              )
+              .verticalScroll(LocalParentScrollState.current),
+            colors = cardColors,
+            elevation = CardDefaults.cardElevation(0.dp),
+            shape = MaterialTheme.shapes.extraLarge.copy(
               bottomStart = CornerSize(0),
               bottomEnd = CornerSize(0)
             )
-          )
-          .animateContentSize(
-            animationSpec = tween(WINDOW_ANIMATION_DURATION)
-          ),
-        colors = cardColors,
-        elevation = CardDefaults.cardElevation(0.dp),
-        shape = MaterialTheme.shapes.extraLarge.copy(
-          bottomStart = CornerSize(0),
-          bottomEnd = CornerSize(0)
-        )
-      ) {
-        Navigation(
-          nav = nav,
-          dialogs = dialogs,
-          actions = Navigation.Actions(finish = dismiss)
-        )
+          ) {
+            Navigation(
+              nav = nav,
+              dialogs = dialogs,
+              actions = Navigation.Actions(finish = dismiss)
+            )
+
+            Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
+          }
+        }
       }
     }
   }
