@@ -16,19 +16,30 @@ import androidx.compose.ui.unit.Dp
  * просто неадекватные люди делали тот модификатор, а ниже спасение для людей, которое работает как DEFAULT, если не передавали
  * свои размеры, то мы используем !ДЕФОЛТ! если передали, то очевидно дефолт переопределяется.
  */
-internal fun Modifier.defaultMinSizeIfUnspecified(minWidth: Dp? = null, minHeight: Dp? = null) = then(object : LayoutModifier {
+internal fun Modifier.defaultMinSizeIfUnspecified(
+  minWidth: Dp? = null,
+  minHeight: Dp? = null
+) = then(object : LayoutModifier {
   override fun MeasureScope.measure(measurable: Measurable, constraints: Constraints): MeasureResult {
-    val mw = minWidth?.roundToPx()
-    val mh = minHeight?.roundToPx()
+    val mwPx = minWidth?.roundToPx()
+    val mhPx = minHeight?.roundToPx()
 
-    val patched = constraints.copy(
-      minWidth = if (mw != null && constraints.minWidth == 0) maxOf(constraints.minWidth, mw) else constraints.minWidth,
-      minHeight = if (mh != null && constraints.minHeight == 0) maxOf(constraints.minHeight, mh) else constraints.minHeight
+    val desiredMinW = if (mwPx != null && constraints.minWidth == 0) mwPx else constraints.minWidth
+    val desiredMinH = if (mhPx != null && constraints.minHeight == 0) mhPx else constraints.minHeight
+
+    val safeMinW = desiredMinW.coerceIn(0, constraints.maxWidth)
+    val safeMinH = desiredMinH.coerceIn(0, constraints.maxHeight)
+
+    val patched = Constraints(
+      minWidth = safeMinW,
+      minHeight = safeMinH,
+      maxWidth = constraints.maxWidth,
+      maxHeight = constraints.maxHeight
     )
 
     val placeable = measurable.measure(patched)
-    val w = maxOf(placeable.width, patched.minWidth)
-    val h = maxOf(placeable.height, patched.minHeight)
+    val w = placeable.width.coerceAtLeast(safeMinW)
+    val h = placeable.height.coerceAtLeast(safeMinH)
     return layout(w, h) { placeable.place(0, 0) }
   }
 })
