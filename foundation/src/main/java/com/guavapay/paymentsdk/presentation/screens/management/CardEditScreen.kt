@@ -22,12 +22,12 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.guavapay.paymentsdk.R
-import com.guavapay.paymentsdk.presentation.LocalScrollState
 import com.guavapay.paymentsdk.presentation.components.atoms.Button
 import com.guavapay.paymentsdk.presentation.components.atoms.TextField
 import com.guavapay.paymentsdk.presentation.navigation.Route
 import com.guavapay.paymentsdk.presentation.navigation.Route.CardEditRoute
 import com.guavapay.paymentsdk.presentation.navigation.rememberNavBackStack
+import com.guavapay.paymentsdk.presentation.platform.LocalParentScrollState
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
 import com.guavapay.paymentsdk.presentation.platform.ime
 import com.guavapay.paymentsdk.presentation.platform.rememberViewModel
@@ -44,7 +44,7 @@ internal object CardEditScreen : Screen<CardEditRoute, Actions> {
   @Composable override fun invoke(nav: SnapshotStateList<Route>, route: CardEditRoute, actions: Actions) = SentryTraced("card-edit-screen") {
     val vm = rememberViewModel(::CardEditVM, route)
     val state = vm.state.collectAsStateWithLifecycle()
-    val parent = LocalScrollState.current
+    val parent = LocalParentScrollState.current
 
     Column(
       modifier = Modifier
