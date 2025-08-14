@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +22,7 @@ import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme.AMERICAN_EXPRES
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme.MASTERCARD
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme.VISA
 import com.guavapay.paymentsdk.presentation.components.atoms.Progress
+import com.guavapay.paymentsdk.presentation.platform.LocalParentScrollState
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
 import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM.State.SavedCard
 import com.guavapay.paymentsdk.presentation.screens.mainpage._subsections.savedcard._components.SavedCardItem
@@ -42,6 +44,12 @@ internal object SavedCardSection {
     isLoading: Boolean,
     actions: Actions = Actions()
   ) {
+    val parent = LocalParentScrollState.current
+
+    LaunchedEffect("scroll") {
+      parent.animateScrollTo(0)
+    }
+
     Column {
       if (isLoading) {
         Spacer(Modifier.height(16.dp))

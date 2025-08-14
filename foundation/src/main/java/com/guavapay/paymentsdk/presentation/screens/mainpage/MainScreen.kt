@@ -13,12 +13,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -90,7 +87,6 @@ internal object MainScreen : Screen<HomeRoute, Actions> {
     val lib = rememberLibraryUnit()
     val vm = rememberViewModel(::MainVM)
     val state by vm.state.collectAsStateWithLifecycle()
-    val scroll = rememberScrollState()
 
     val panReq = remember(::FocusRequester)
     val expReq = remember(::FocusRequester)
@@ -144,10 +140,8 @@ internal object MainScreen : Screen<HomeRoute, Actions> {
     Column(
       modifier = Modifier
         .fillMaxWidth()
-        .verticalScroll(scroll)
         .padding(16.dp)
         .navigationBarsPadding()
-        .imePadding()
     ) {
       Box(
         modifier = Modifier

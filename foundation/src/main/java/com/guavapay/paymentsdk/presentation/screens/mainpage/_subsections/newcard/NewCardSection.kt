@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +23,7 @@ import com.guavapay.paymentsdk.R
 import com.guavapay.paymentsdk.presentation.components.atoms.TextField
 import com.guavapay.paymentsdk.presentation.components.sections.NetworksRow
 import com.guavapay.paymentsdk.presentation.platform.CardNumberVisualTransformation
+import com.guavapay.paymentsdk.presentation.platform.LocalParentScrollState
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
 import com.guavapay.paymentsdk.presentation.platform.string
 import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM
@@ -57,6 +59,12 @@ internal object NewCardSection {
     actions: Actions,
     modifier: Modifier = Modifier
   ) {
+    val parent = LocalParentScrollState.current
+
+    LaunchedEffect("scroll") {
+      parent.animateScrollTo(0)
+    }
+
     Column(modifier = modifier.fillMaxWidth()) {
       TextField(
         modifier = Modifier.focusRequester(panFocus).sentryTag("pan-input"),
