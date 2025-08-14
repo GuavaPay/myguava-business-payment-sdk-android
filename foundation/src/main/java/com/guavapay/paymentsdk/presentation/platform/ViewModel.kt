@@ -18,6 +18,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
+import java.io.Serializable
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.properties.ReadOnlyProperty
@@ -36,6 +37,8 @@ internal fun interface ViewModelFactory<T : ViewModel> : Factory {
 
   override fun <R : ViewModel> create(modelClass: Class<R>) = create(modelClass, CreationExtras.Empty)
 }
+
+internal object NoActions : Serializable { private fun readResolve(): Any = NoActions }
 
 @Composable internal inline fun <reified T : ViewModel> rememberViewModel(
   noinline ctor: (LibraryUnit, SavedStateHandle) -> T

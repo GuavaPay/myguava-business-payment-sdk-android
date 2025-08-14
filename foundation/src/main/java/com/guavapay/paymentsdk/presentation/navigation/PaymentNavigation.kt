@@ -11,6 +11,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entry
 import androidx.navigation3.runtime.entryProvider
@@ -20,6 +21,7 @@ import androidx.navigation3.ui.rememberSceneSetupNavEntryDecorator
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Error
 import com.guavapay.paymentsdk.presentation.PaymentGatewayActivity.Companion.WINDOW_ANIMATION_DURATION
+import com.guavapay.paymentsdk.presentation.platform.NoActions
 import com.guavapay.paymentsdk.presentation.screens.abort.AbortScreen
 import com.guavapay.paymentsdk.presentation.screens.cancel.CancelScreen
 import com.guavapay.paymentsdk.presentation.screens.contact.ContactScreen
@@ -45,8 +47,8 @@ internal object Navigation {
       modifier = Modifier,
       entryProvider = entryProvider {
         entry<Route.HomeRoute> { MainScreen(nav, it, actions = MainScreen.Actions(finish = { actions.finish(it) }, showDialog = { route -> dialogs.add(route) })) }
-        entry<Route.ContactRoute> { ContactScreen(nav, it, actions = ContactScreen.Actions) }
-        entry<Route.PhoneRoute> { PhoneScreen(nav, it, actions = PhoneScreen.Actions) }
+        entry<Route.ContactRoute> { ContactScreen(nav, it, actions = NoActions) }
+        entry<Route.PhoneRoute> { PhoneScreen(nav, it, actions = NoActions) }
       },
       transitionSpec = {
         slideInHorizontally(
@@ -70,7 +72,8 @@ internal object Navigation {
   }
 
   @Composable fun DialogContent(route: Route, nav: SnapshotStateList<Route>, dialogRoutes: SnapshotStateList<Route>, actions: Actions) {
-    val close = { dialogRoutes.removeLastOrNull(); Unit }
+    val kb = LocalSoftwareKeyboardController.current
+    val close = { kb?.hide() ; dialogRoutes.removeLastOrNull(); Unit }
 
     when (route) {
       is Route.AbortRoute -> AbortScreen(nav, route, actions = AbortScreen.Actions(finish = { close() ; actions.finish(Error(it)) }, close = close))
