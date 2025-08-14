@@ -1,5 +1,8 @@
 -dontwarn javax.annotation.**
 
+# Keep base package name com.guavapay.paymentsdk but allow obfuscation of subpackages
+-keeppackagenames com.guavapay.paymentsdk
+
 -keeppackagenames okhttp3.internal.publicsuffix.*
 -adaptresourcefilenames okhttp3/internal/publicsuffix/PublicSuffixDatabase.gz
 
