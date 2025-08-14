@@ -2,23 +2,18 @@
 
 package com.guavapay.paymentsdk.presentation.screens.cancel
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -38,7 +33,10 @@ import io.sentry.compose.SentryTraced
 import java.io.Serializable
 
 internal object CancelScreen : Screen<Route.CancelRoute, Actions> {
-  data class Actions(val finish: (PaymentResult) -> Unit = @JvmSerializableLambda {}) : Serializable
+  data class Actions(
+    val finish: (PaymentResult) -> Unit = @JvmSerializableLambda {},
+    val close: () -> Unit = @JvmSerializableLambda {}
+  ) : Serializable
 
   @Composable override fun invoke(nav: SnapshotStateList<Route>, route: Route.CancelRoute, actions: Actions) = SentryTraced("cancel-screen") {
     val scroll = rememberScrollState()
@@ -47,23 +45,9 @@ internal object CancelScreen : Screen<Route.CancelRoute, Actions> {
       modifier = Modifier
         .fillMaxWidth()
         .verticalScroll(scroll)
-        .padding(16.dp)
-        .navigationBarsPadding()
+        .padding(horizontal = 16.dp, vertical = 24.dp)
         .imePadding()
     ) {
-      Box(
-        modifier = Modifier
-          .width(40.dp)
-          .height(4.dp)
-          .background(
-            MaterialTheme.colorScheme.outline,
-            MaterialTheme.shapes.extraSmall
-          )
-          .align(Alignment.CenterHorizontally)
-      )
-
-      Spacer(modifier = Modifier.height(20.dp))
-
       Text(
         text = stringResource(R.string.cancel_title),
         style = MaterialTheme.typography.titleLarge,
@@ -85,7 +69,7 @@ internal object CancelScreen : Screen<Route.CancelRoute, Actions> {
       Spacer(modifier = Modifier.height(16.dp))
 
       Button(
-        onClick = { nav.removeLastOrNull() },
+        onClick = { actions.close() },
         modifier = Modifier.fillMaxWidth().sentryTag("continue-payment-button"),
         style = Button.primary()
       ) {

@@ -2,23 +2,18 @@
 
 package com.guavapay.paymentsdk.presentation.screens.abort
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -38,7 +33,10 @@ import io.sentry.compose.SentryTraced
 import java.io.Serializable
 
 internal object AbortScreen : Screen<AbortRoute, Actions> {
-  data class Actions(val finish: (Throwable?) -> Unit = @JvmSerializableLambda {}) : Serializable
+  data class Actions(
+    val finish: (Throwable?) -> Unit = @JvmSerializableLambda {},
+    val close: () -> Unit = @JvmSerializableLambda {}
+  ) : Serializable
 
   @Composable override operator fun invoke(nav: SnapshotStateList<Route>, route: AbortRoute, actions: Actions) = SentryTraced("abort-screen") {
     val scroll = rememberScrollState()
@@ -47,23 +45,9 @@ internal object AbortScreen : Screen<AbortRoute, Actions> {
       modifier = Modifier
         .fillMaxWidth()
         .verticalScroll(scroll)
-        .padding(16.dp)
-        .navigationBarsPadding()
+        .padding(horizontal = 16.dp, vertical = 24.dp)
         .imePadding()
     ) {
-      Box(
-        modifier = Modifier
-          .width(40.dp)
-          .height(4.dp)
-          .background(
-            MaterialTheme.colorScheme.outline,
-            MaterialTheme.shapes.extraSmall
-          )
-          .align(Alignment.CenterHorizontally)
-      )
-
-      Spacer(modifier = Modifier.height(20.dp))
-
       Text(
         text = stringResource(R.string.abort_title),
         style = MaterialTheme.typography.titleLarge,
@@ -85,7 +69,10 @@ internal object AbortScreen : Screen<AbortRoute, Actions> {
       Spacer(modifier = Modifier.height(16.dp))
 
       Button(
-        onClick = { actions.finish(route.throwable) },
+        onClick = {
+          actions.close()
+          actions.finish(route.throwable)
+        },
         modifier = Modifier.fillMaxWidth().sentryTag("finish-button"),
         style = Button.primary()
       ) {
