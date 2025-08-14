@@ -73,7 +73,7 @@ internal object CardEditScreen : Screen<CardEditRoute, Actions> {
           actions.close()
           route.onEditConfirmed(route.cardId, state.value.cardName)
         },
-        modifier = Modifier.sentryTag("card-name-input").ime(parent, extraSpace = 16.dp)
+        modifier = Modifier.sentryTag("card-name-input").ime(parent)
       )
 
       Spacer(modifier = Modifier.height(16.dp))

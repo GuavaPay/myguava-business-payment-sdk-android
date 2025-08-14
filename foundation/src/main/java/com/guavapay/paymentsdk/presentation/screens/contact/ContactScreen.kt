@@ -10,14 +10,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -39,9 +38,11 @@ import com.guavapay.paymentsdk.presentation.navigation.Route
 import com.guavapay.paymentsdk.presentation.navigation.Route.ContactRoute
 import com.guavapay.paymentsdk.presentation.navigation.Route.PhoneRoute
 import com.guavapay.paymentsdk.presentation.navigation.rememberNavBackStack
+import com.guavapay.paymentsdk.presentation.platform.LocalParentScrollState
 import com.guavapay.paymentsdk.presentation.platform.NoActions
 import com.guavapay.paymentsdk.presentation.platform.PhoneNumberVisualTransformation
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
+import com.guavapay.paymentsdk.presentation.platform.ime
 import com.guavapay.paymentsdk.presentation.platform.remember
 import com.guavapay.paymentsdk.presentation.platform.rememberViewModel
 import com.guavapay.paymentsdk.presentation.platform.string
@@ -53,10 +54,14 @@ internal object ContactScreen : Screen<ContactRoute, NoActions> {
   @Composable override fun invoke(nav: SnapshotStateList<Route>, route: ContactRoute, actions: NoActions) = SentryTraced("contact-screen") {
     val vm = rememberViewModel(::ContactVM, route)
     val state = vm.state.collectAsStateWithLifecycle()
-    val scroll = rememberScrollState()
+    val parent = LocalParentScrollState.current
 
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect("scroll") {
+      parent.animateScrollTo(0)
+    }
 
     Column {
       IconButton(
@@ -73,7 +78,6 @@ internal object ContactScreen : Screen<ContactRoute, NoActions> {
       Column(
         modifier = Modifier
           .fillMaxWidth()
-          .verticalScroll(scroll)
           .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
           .navigationBarsPadding()
       ) {
@@ -101,7 +105,7 @@ internal object ContactScreen : Screen<ContactRoute, NoActions> {
           error = state.value.emailError?.string(),
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
           singleLine = true,
-          modifier = Modifier.sentryTag("email-input")
+          modifier = Modifier.sentryTag("email-input").ime(parent)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -145,7 +149,7 @@ internal object ContactScreen : Screen<ContactRoute, NoActions> {
             },
             singleLine = true,
             visualTransformation = phoneVisual,
-            modifier = Modifier.weight(1f).sentryTag("phone-input")
+            modifier = Modifier.weight(1f).sentryTag("phone-input").ime(parent)
           )
         }
 
