@@ -6,10 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,14 +36,10 @@ internal object AbortScreen : Screen<AbortRoute, Actions> {
   ) : Serializable
 
   @Composable override operator fun invoke(nav: SnapshotStateList<Route>, route: AbortRoute, actions: Actions) = SentryTraced("abort-screen") {
-    val scroll = rememberScrollState()
-
     Column(
       modifier = Modifier
         .fillMaxWidth()
-        .verticalScroll(scroll)
         .padding(horizontal = 16.dp, vertical = 24.dp)
-        .imePadding()
     ) {
       Text(
         text = stringResource(R.string.abort_title),
