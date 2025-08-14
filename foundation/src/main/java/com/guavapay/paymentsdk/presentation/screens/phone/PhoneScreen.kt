@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -36,22 +35,17 @@ import com.guavapay.paymentsdk.presentation.components.atoms.Progress
 import com.guavapay.paymentsdk.presentation.navigation.Route
 import com.guavapay.paymentsdk.presentation.navigation.Route.PhoneRoute
 import com.guavapay.paymentsdk.presentation.navigation.rememberNavBackStack
+import com.guavapay.paymentsdk.presentation.platform.NoActions
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
 import com.guavapay.paymentsdk.presentation.platform.rememberViewModel
 import com.guavapay.paymentsdk.presentation.screens.Screen
-import com.guavapay.paymentsdk.presentation.screens.phone.PhoneScreen.Actions
 import com.guavapay.paymentsdk.presentation.screens.phone._components.PhoneItem
 import com.guavapay.paymentsdk.presentation.screens.phone._components.PhoneSearch
 import io.sentry.compose.SentryModifier.sentryTag
 import io.sentry.compose.SentryTraced
-import java.io.Serializable
 
-internal object PhoneScreen : Screen<PhoneRoute, Actions> {
-  object Actions : Serializable {
-    private fun readResolve(): Any = Actions
-  }
-
-  @Composable override fun invoke(nav: SnapshotStateList<Route>, route: PhoneRoute, actions: Actions) = SentryTraced("phone-screen") {
+internal object PhoneScreen : Screen<PhoneRoute, NoActions> {
+  @Composable override fun invoke(nav: SnapshotStateList<Route>, route: PhoneRoute, actions: NoActions) = SentryTraced("phone-screen") {
     val vm = rememberViewModel(::PhoneVM, route)
     val state = vm.state.collectAsStateWithLifecycle()
 
@@ -69,10 +63,9 @@ internal object PhoneScreen : Screen<PhoneRoute, Actions> {
 
       Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 16.dp)
-            .navigationBarsPadding()
-            .imePadding()
+          .fillMaxWidth()
+          .padding(bottom = 16.dp)
+          .navigationBarsPadding()
       ) {
         Text(
           modifier = Modifier.padding(horizontal = 16.dp),
@@ -87,9 +80,9 @@ internal object PhoneScreen : Screen<PhoneRoute, Actions> {
           searchQuery = state.value.searchQuery,
           onSearchQueryChange = vm.handles::search,
           fieldModifier = Modifier
-              .padding(horizontal = 16.dp)
-              .fillMaxWidth()
-              .sentryTag("search-input")
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+            .sentryTag("search-input")
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -98,9 +91,9 @@ internal object PhoneScreen : Screen<PhoneRoute, Actions> {
           state.value.isLoading -> {
             Box(
               modifier = Modifier
-                  .fillMaxWidth()
-                  .padding(horizontal = 16.dp)
-                  .weight(1f),
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .weight(1f),
               contentAlignment = Alignment.Center
             ) {
               Progress()
@@ -110,9 +103,9 @@ internal object PhoneScreen : Screen<PhoneRoute, Actions> {
           state.value.countries.isEmpty() -> {
             Box(
               modifier = Modifier
-                  .fillMaxWidth()
-                  .padding(16.dp)
-                  .weight(1f),
+                .fillMaxWidth()
+                .padding(16.dp)
+                .weight(1f),
               contentAlignment = Alignment.TopCenter
             ) {
               Text(
@@ -126,8 +119,8 @@ internal object PhoneScreen : Screen<PhoneRoute, Actions> {
           else -> {
             LazyColumn(
               modifier = Modifier
-                  .fillMaxWidth()
-                  .weight(1f),
+                .fillMaxWidth()
+                .weight(1f),
               state = rememberLazyListState(),
               verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
@@ -164,6 +157,6 @@ internal object PhoneScreen : Screen<PhoneRoute, Actions> {
 
 @PreviewLightDark @Composable private fun PhoneScreenPreview() {
   PreviewTheme {
-    PhoneScreen(rememberNavBackStack(), PhoneRoute { _, _ -> }, Actions)
+    PhoneScreen(rememberNavBackStack(), PhoneRoute { _, _ -> }, NoActions)
   }
 }
