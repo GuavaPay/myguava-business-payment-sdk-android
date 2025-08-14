@@ -24,7 +24,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
 internal class PhoneVM(private val lib: LibraryUnit, private val handle: SavedStateHandle, private val route: PhoneRoute) : ViewModel() {
-  private val x by basy(this, lib)
+  private val x by basy(lib)
 
   private inline fun launch(
     context: CoroutineContext = EmptyCoroutineContext,

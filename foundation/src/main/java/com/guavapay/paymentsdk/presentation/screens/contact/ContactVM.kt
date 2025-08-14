@@ -15,7 +15,7 @@ import com.guavapay.paymentsdk.presentation.platform.FIELD_DEBOUNCE_MS
 import com.guavapay.paymentsdk.presentation.platform.FieldState
 import com.guavapay.paymentsdk.presentation.platform.Text
 import com.guavapay.paymentsdk.presentation.platform.collectDebounced
-import com.guavapay.paymentsdk.presentation.platform.coroutinify
+import com.guavapay.paymentsdk.presentation.platform.basy
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +32,7 @@ import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.math.max
 
 internal class ContactVM(private val lib: LibraryUnit, private val handle: SavedStateHandle, private val route: ContactRoute) : ViewModel() {
-  private val x by coroutinify(this, lib)
+  private val x by basy(lib)
 
   private inline fun launch(
     context: CoroutineContext = EmptyCoroutineContext,
