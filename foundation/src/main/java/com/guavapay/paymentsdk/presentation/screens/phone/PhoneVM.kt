@@ -8,7 +8,7 @@ import com.guavapay.paymentsdk.LibraryUnit
 import com.guavapay.paymentsdk.integrations.local.Country
 import com.guavapay.paymentsdk.integrations.local.LocalCountries
 import com.guavapay.paymentsdk.presentation.navigation.Route.PhoneRoute
-import com.guavapay.paymentsdk.presentation.platform.coroutinify
+import com.guavapay.paymentsdk.presentation.platform.basy
 import com.guavapay.paymentsdk.presentation.platform.retrow
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -24,7 +24,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
 internal class PhoneVM(private val lib: LibraryUnit, private val handle: SavedStateHandle, private val route: PhoneRoute) : ViewModel() {
-  private val x by coroutinify(this, lib)
+  private val x by basy(this, lib)
 
   private inline fun launch(
     context: CoroutineContext = EmptyCoroutineContext,
