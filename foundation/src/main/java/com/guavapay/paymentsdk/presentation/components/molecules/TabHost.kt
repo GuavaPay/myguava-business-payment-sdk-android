@@ -55,7 +55,7 @@ internal object TabHost {
       modifier = modifier
         .fillMaxWidth()
         .height(40.dp)
-        .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.extraLarge)
+        .background(MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.extraLarge)
         .padding(2.dp)
     ) {
       Box(
