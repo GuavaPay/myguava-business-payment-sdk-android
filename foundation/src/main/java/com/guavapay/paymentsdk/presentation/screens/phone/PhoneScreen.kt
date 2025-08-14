@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -21,6 +22,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -30,14 +32,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.guavapay.paymentsdk.R
 import com.guavapay.paymentsdk.presentation.components.atoms.Progress
 import com.guavapay.paymentsdk.presentation.navigation.Route
 import com.guavapay.paymentsdk.presentation.navigation.Route.PhoneRoute
 import com.guavapay.paymentsdk.presentation.navigation.rememberNavBackStack
+import com.guavapay.paymentsdk.presentation.platform.LocalParentScrollState
 import com.guavapay.paymentsdk.presentation.platform.NoActions
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
+import com.guavapay.paymentsdk.presentation.platform.ime
 import com.guavapay.paymentsdk.presentation.platform.rememberViewModel
 import com.guavapay.paymentsdk.presentation.screens.Screen
 import com.guavapay.paymentsdk.presentation.screens.phone._components.PhoneItem
@@ -49,50 +55,60 @@ internal object PhoneScreen : Screen<PhoneRoute, NoActions> {
   @Composable override fun invoke(nav: SnapshotStateList<Route>, route: PhoneRoute, actions: NoActions) = SentryTraced("phone-screen") {
     val vm = rememberViewModel(::PhoneVM, route)
     val state = vm.state.collectAsStateWithLifecycle()
+    val parent = LocalParentScrollState.current
+    val maxCardHeight = with(LocalDensity.current) { (LocalWindowInfo.current.containerSize.height * 0.9f).toDp() }
+
+    LaunchedEffect("scroll") {
+      parent.animateScrollTo(0)
+    }
 
     Column(
       modifier = Modifier
-        .fillMaxSize()
+        .fillMaxWidth()
+        .heightIn(max = maxCardHeight)
         .navigationBarsPadding()
     ) {
-      IconButton(
-        onClick = nav::removeLastOrNull,
-        modifier = Modifier.sentryTag("back-button")
-      ) {
-        Icon(
-          painter = painterResource(id = R.drawable.ic_arrow_back),
-          contentDescription = null,
-          tint = MaterialTheme.colorScheme.onSurface
+      Column {
+        IconButton(
+          onClick = nav::removeLastOrNull,
+          modifier = Modifier.sentryTag("back-button")
+        ) {
+          Icon(
+            painter = painterResource(id = R.drawable.ic_arrow_back),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurface
+          )
+        }
+
+        Text(
+          modifier = Modifier.padding(horizontal = 16.dp),
+          text = stringResource(R.string.select_country),
+          style = MaterialTheme.typography.headlineSmall,
+          color = MaterialTheme.colorScheme.onSurface
         )
+
+        Spacer(modifier = Modifier.size(16.dp))
+
+        PhoneSearch(
+          searchQuery = state.value.searchQuery,
+          onSearchQueryChange = vm.handles::search,
+          fieldModifier = Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+            .sentryTag("search-input")
+            .ime(parent),
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
       }
-
-      Text(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        text = stringResource(R.string.select_country),
-        style = MaterialTheme.typography.headlineSmall,
-        color = MaterialTheme.colorScheme.onSurface
-      )
-
-      Spacer(modifier = Modifier.size(16.dp))
-
-      PhoneSearch(
-        searchQuery = state.value.searchQuery,
-        onSearchQueryChange = vm.handles::search,
-        fieldModifier = Modifier
-          .padding(horizontal = 16.dp)
-          .fillMaxWidth()
-          .sentryTag("search-input")
-      )
-
-      Spacer(modifier = Modifier.height(16.dp))
 
       when {
         state.value.isLoading -> {
           Box(
             modifier = Modifier
               .fillMaxWidth()
-              .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-              .weight(1f, fill = false),
+              .weight(1f)
+              .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
             contentAlignment = Alignment.Center
           ) {
             Progress()
@@ -103,8 +119,8 @@ internal object PhoneScreen : Screen<PhoneRoute, NoActions> {
           Box(
             modifier = Modifier
               .fillMaxWidth()
-              .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-              .weight(1f, fill = false),
+              .weight(1f)
+              .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
             contentAlignment = Alignment.TopCenter
           ) {
             Text(
@@ -116,33 +132,37 @@ internal object PhoneScreen : Screen<PhoneRoute, NoActions> {
         }
 
         else -> {
-          LazyColumn(
+          Box(
             modifier = Modifier
               .fillMaxWidth()
-              .weight(1f, fill = false)
-              .padding(bottom = 16.dp),
-            state = rememberLazyListState(),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+              .weight(1f)
+              .padding(bottom = 16.dp)
           ) {
-            itemsIndexed(
-              items = state.value.countries,
-              key = { index, c -> c.countryCode }
-            ) { index, country ->
-              PhoneItem(
-                modifier = Modifier.padding(horizontal = 16.dp).sentryTag("country-item"),
-                country = country,
-                onClick = { selected ->
-                  vm.handles.country(selected)
-                  nav.removeLastOrNull()
-                }
-              )
-
-              if (index < state.value.countries.lastIndex) {
-                HorizontalDivider(
-                  modifier = Modifier.padding(horizontal = 16.dp),
-                  thickness = Dp.Hairline,
-                  color = MaterialTheme.colorScheme.outlineVariant
+            LazyColumn(
+              modifier = Modifier.fillMaxSize(),
+              state = rememberLazyListState(),
+              verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+              itemsIndexed(
+                items = state.value.countries,
+                key = { index, c -> c.countryCode }
+              ) { index, country ->
+                PhoneItem(
+                  modifier = Modifier.padding(horizontal = 16.dp).sentryTag("country-item"),
+                  country = country,
+                  onClick = { selected ->
+                    vm.handles.country(selected)
+                    nav.removeLastOrNull()
+                  }
                 )
+
+                if (index < state.value.countries.lastIndex) {
+                  HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    thickness = Dp.Hairline,
+                    color = MaterialTheme.colorScheme.outlineVariant
+                  )
+                }
               }
             }
           }
