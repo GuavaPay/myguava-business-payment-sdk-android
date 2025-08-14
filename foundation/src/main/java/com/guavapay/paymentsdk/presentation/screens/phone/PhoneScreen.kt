@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -49,7 +50,11 @@ internal object PhoneScreen : Screen<PhoneRoute, NoActions> {
     val vm = rememberViewModel(::PhoneVM, route)
     val state = vm.state.collectAsStateWithLifecycle()
 
-    Column {
+    Column(
+      modifier = Modifier
+        .fillMaxSize()
+        .navigationBarsPadding()
+    ) {
       IconButton(
         onClick = nav::removeLastOrNull,
         modifier = Modifier.sentryTag("back-button")
@@ -61,89 +66,83 @@ internal object PhoneScreen : Screen<PhoneRoute, NoActions> {
         )
       }
 
-      Column(
-        modifier = Modifier
+      Text(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        text = stringResource(R.string.select_country),
+        style = MaterialTheme.typography.headlineSmall,
+        color = MaterialTheme.colorScheme.onSurface
+      )
+
+      Spacer(modifier = Modifier.size(16.dp))
+
+      PhoneSearch(
+        searchQuery = state.value.searchQuery,
+        onSearchQueryChange = vm.handles::search,
+        fieldModifier = Modifier
+          .padding(horizontal = 16.dp)
           .fillMaxWidth()
-          .padding(bottom = 16.dp)
-          .navigationBarsPadding()
-      ) {
-        Text(
-          modifier = Modifier.padding(horizontal = 16.dp),
-          text = stringResource(R.string.select_country),
-          style = MaterialTheme.typography.headlineSmall,
-          color = MaterialTheme.colorScheme.onSurface
-        )
+          .sentryTag("search-input")
+      )
 
-        Spacer(modifier = Modifier.size(16.dp))
+      Spacer(modifier = Modifier.height(16.dp))
 
-        PhoneSearch(
-          searchQuery = state.value.searchQuery,
-          onSearchQueryChange = vm.handles::search,
-          fieldModifier = Modifier
-            .padding(horizontal = 16.dp)
-            .fillMaxWidth()
-            .sentryTag("search-input")
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        when {
-          state.value.isLoading -> {
-            Box(
-              modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .weight(1f),
-              contentAlignment = Alignment.Center
-            ) {
-              Progress()
-            }
+      when {
+        state.value.isLoading -> {
+          Box(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+              .weight(1f, fill = false),
+            contentAlignment = Alignment.Center
+          ) {
+            Progress()
           }
+        }
 
-          state.value.countries.isEmpty() -> {
-            Box(
-              modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-                .weight(1f),
-              contentAlignment = Alignment.TopCenter
-            ) {
-              Text(
-                text = stringResource(R.string.nothing_found),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-              )
-            }
+        state.value.countries.isEmpty() -> {
+          Box(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+              .weight(1f, fill = false),
+            contentAlignment = Alignment.TopCenter
+          ) {
+            Text(
+              text = stringResource(R.string.nothing_found),
+              style = MaterialTheme.typography.bodyLarge,
+              color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
           }
+        }
 
-          else -> {
-            LazyColumn(
-              modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-              state = rememberLazyListState(),
-              verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-              itemsIndexed(
-                items = state.value.countries,
-                key = { index, c -> c.countryCode }
-              ) { index, country ->
-                PhoneItem(
-                  modifier = Modifier.padding(horizontal = 16.dp).sentryTag("country-item"),
-                  country = country,
-                  onClick = { selected ->
-                    vm.handles.country(selected)
-                    nav.removeLastOrNull()
-                  }
-                )
-
-                if (index < state.value.countries.lastIndex) {
-                  HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    thickness = Dp.Hairline,
-                    color = MaterialTheme.colorScheme.outlineVariant
-                  )
+        else -> {
+          LazyColumn(
+            modifier = Modifier
+              .fillMaxWidth()
+              .weight(1f, fill = false)
+              .padding(bottom = 16.dp),
+            state = rememberLazyListState(),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+          ) {
+            itemsIndexed(
+              items = state.value.countries,
+              key = { index, c -> c.countryCode }
+            ) { index, country ->
+              PhoneItem(
+                modifier = Modifier.padding(horizontal = 16.dp).sentryTag("country-item"),
+                country = country,
+                onClick = { selected ->
+                  vm.handles.country(selected)
+                  nav.removeLastOrNull()
                 }
+              )
+
+              if (index < state.value.countries.lastIndex) {
+                HorizontalDivider(
+                  modifier = Modifier.padding(horizontal = 16.dp),
+                  thickness = Dp.Hairline,
+                  color = MaterialTheme.colorScheme.outlineVariant
+                )
               }
             }
           }
