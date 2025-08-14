@@ -27,7 +27,7 @@ import io.sentry.compose.SentryModifier.sentryTag
     modifier = modifier
       .size(width = 40.dp, height = 48.dp)
       .clip(RoundedCornerShape(8.dp))
-      .background(MaterialTheme.colorScheme.surfaceVariant)
+      .background(MaterialTheme.colorScheme.outlineVariant)
       .clickable { onClick() }
       .sentryTag("menu-button-${if (isOpen) "close" else "open"}"),
     contentAlignment = Alignment.Center
