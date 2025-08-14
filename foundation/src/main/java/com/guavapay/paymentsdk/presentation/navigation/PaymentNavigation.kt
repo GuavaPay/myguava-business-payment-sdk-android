@@ -31,7 +31,7 @@ import com.guavapay.paymentsdk.presentation.screens.phone.PhoneScreen
 internal object Navigation {
   data class Actions(val finish: (PaymentResult) -> Unit)
 
-  @Composable operator fun invoke(nav: SnapshotStateList<Route>, actions: Actions) {
+  @Composable operator fun invoke(nav: SnapshotStateList<Route>, dialogs: SnapshotStateList<Route>, actions: Actions) {
     NavDisplay(
       backStack = nav,
       entryDecorators = listOf(
@@ -44,11 +44,7 @@ internal object Navigation {
       onBack = { nav.removeLastOrNull() },
       modifier = Modifier,
       entryProvider = entryProvider {
-        entry<Route.HomeRoute> { MainScreen(nav, it, actions = MainScreen.Actions(finish = { actions.finish(it) })) }
-        entry<Route.AbortRoute> { AbortScreen(nav, it, actions = AbortScreen.Actions(finish = { actions.finish(Error(it)) })) }
-        entry<Route.CardRemoveRoute> { CardRemoveScreen(nav, it, actions = CardRemoveScreen.Actions) }
-        entry<Route.CardEditRoute> { CardEditScreen(nav, it, actions = CardEditScreen.Actions) }
-        entry<Route.CancelRoute> { CancelScreen(nav, it, actions = CancelScreen.Actions(finish = { actions.finish(it) })) }
+        entry<Route.HomeRoute> { MainScreen(nav, it, actions = MainScreen.Actions(finish = { actions.finish(it) }, showDialog = { route -> dialogs.add(route) })) }
         entry<Route.ContactRoute> { ContactScreen(nav, it, actions = ContactScreen.Actions) }
         entry<Route.PhoneRoute> { PhoneScreen(nav, it, actions = PhoneScreen.Actions) }
       },
@@ -71,5 +67,17 @@ internal object Navigation {
         ) + fadeOut(animationSpec = tween(durationMillis = WINDOW_ANIMATION_DURATION))
       }
     )
+  }
+
+  @Composable fun DialogContent(route: Route, nav: SnapshotStateList<Route>, dialogRoutes: SnapshotStateList<Route>, actions: Actions) {
+    val close = { dialogRoutes.removeLastOrNull(); Unit }
+
+    when (route) {
+      is Route.AbortRoute -> AbortScreen(nav, route, actions = AbortScreen.Actions(finish = { close() ; actions.finish(Error(it)) }, close = close))
+      is Route.CardRemoveRoute -> CardRemoveScreen(nav, route, actions = CardRemoveScreen.Actions(close = close))
+      is Route.CardEditRoute -> CardEditScreen(nav, route, actions = CardEditScreen.Actions(close = close))
+      is Route.CancelRoute -> CancelScreen(nav, route, actions = CancelScreen.Actions(finish = { close() ; actions.finish(it) }, close = close))
+      else -> {}
+    }
   }
 }
