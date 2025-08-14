@@ -47,7 +47,7 @@ import com.guavapay.paymentsdk.platform.coroutines.ExceptionHandler
 import com.guavapay.paymentsdk.presentation.platform.FieldState
 import com.guavapay.paymentsdk.presentation.platform.Text
 import com.guavapay.paymentsdk.presentation.platform.collectDebounced
-import com.guavapay.paymentsdk.presentation.platform.coroutinify
+import com.guavapay.paymentsdk.presentation.platform.basy
 import com.guavapay.paymentsdk.presentation.platform.currencify
 import com.guavapay.paymentsdk.presentation.platform.retrow
 import com.guavapay.paymentsdk.presentation.screens.mainpage.threeds.ThreedsInterconnect
@@ -75,7 +75,7 @@ import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 
 internal class MainVM(private val lib: LibraryUnit, private val handle: SavedStateHandle) : ViewModel() {
-  private val x by coroutinify(this, lib)
+  private val x by basy(lib)
 
   private inline fun launch(
     context: CoroutineContext = EmptyCoroutineContext,

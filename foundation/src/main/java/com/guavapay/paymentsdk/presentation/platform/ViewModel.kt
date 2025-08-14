@@ -77,7 +77,7 @@ internal fun interface ViewModelFactory<T : ViewModel> : Factory {
   })
 }
 
-internal class ViewModel0 /* Я не придумал лучше названия, но в целом пойдет:). */ (private val vm: ViewModel, private val lib: LibraryUnit) {
+internal class BasyVM(private val vm: ViewModel, private val lib: LibraryUnit) {
   private val handler = CompositeExceptionHandler(lib.coroutine.handlers.logcat, lib.coroutine.handlers.metrica)
 
   val scope by lazy { CoroutineScope(vm.viewModelScope.coroutineContext + handler) }
@@ -116,9 +116,9 @@ internal class ViewModel0 /* Я не придумал лучше названи�
   fun <T> Flow<T>.launch() = launchIn(CoroutineScope(scope.coroutineContext + lib.coroutine.elements.named))
 }
 
-private class CoroutinifyDelegate(private val vm: ViewModel, private val lib: LibraryUnit) : ReadOnlyProperty<ViewModel, ViewModel0> {
-  private var cached: ViewModel0? = null
-  @Synchronized override fun getValue(thisRef: ViewModel, property: KProperty<*>) = cached ?: ViewModel0(thisRef, lib).also { cached = it }
+private class BasyDelegate(private val vm: ViewModel, private val lib: LibraryUnit) : ReadOnlyProperty<ViewModel, BasyVM> {
+  private var cached: BasyVM? = null
+  @Synchronized override fun getValue(thisRef: ViewModel, property: KProperty<*>) = cached ?: BasyVM(thisRef, lib).also { cached = it }
 }
 
-internal fun coroutinify(vm: ViewModel, lib: LibraryUnit): ReadOnlyProperty<ViewModel, ViewModel0> = CoroutinifyDelegate(vm, lib)
+internal fun ViewModel.basy(lib: LibraryUnit): ReadOnlyProperty<ViewModel, BasyVM> = BasyDelegate(this, lib)
