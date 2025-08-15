@@ -2,6 +2,7 @@
 
 package com.guavapay.paymentsdk.metrica
 
+import android.app.Application
 import android.content.Context
 import com.guavapay.paymentsdk.LibraryUnit
 import com.guavapay.paymentsdk.gateway.banking.GatewayException
@@ -19,12 +20,20 @@ import io.sentry.Scopes
 import io.sentry.SentryClient
 import io.sentry.SentryLevel
 import io.sentry.UncaughtExceptionHandlerIntegration
+import io.sentry.android.core.ActivityBreadcrumbsIntegration
 import io.sentry.android.core.ActivityFramesTracker
+import io.sentry.android.core.ActivityLifecycleIntegration
+import io.sentry.android.core.AnrIntegrationFactory
 import io.sentry.android.core.AnrV2EventProcessor
+import io.sentry.android.core.AppComponentsBreadcrumbsIntegration
 import io.sentry.android.core.BuildInfoProvider
+import io.sentry.android.core.NetworkBreadcrumbsIntegration
 import io.sentry.android.core.SentryAndroidOptions
+import io.sentry.android.core.SystemEventsBreadcrumbsIntegration
+import io.sentry.android.core.UserInteractionIntegration
 import io.sentry.protocol.User
 import io.sentry.util.LoadClass
+import kotlinx.coroutines.CancellationException
 
 internal class MetricaUnit(private val lib: LibraryUnit) {
   private val options = SentryAndroidOptions().apply {
@@ -39,6 +48,7 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
     isAttachThreads = true
 
     proguardUuid = "7FC967FA-07F0-48E6-A3B7-EE86703DB9E6"
+    addBundleId("7FC967FA-07F0-48E6-A3B7-EE86703DB9E6")
     release = "sdk@0.5.2"
     dist = "0.5.2.public.release"
 
@@ -46,8 +56,12 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
     isAnrEnabled = true
     isEnablePerformanceV2 = true
     isSendDefaultPii = true
+    isEnableAppStartProfiling = true
 
     isEnableUncaughtExceptionHandler = true
+    flushTimeoutMillis = 2000
+
+    addIgnoredExceptionForType(CancellationException::class.java)
 
     setBeforeSend { event, _ ->
       if (isSdkRelatedException(event.throwable)) {
@@ -57,11 +71,24 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
       return@setBeforeSend null
     }
 
-    addEventProcessor(AnrV2EventProcessor(lib.context, this, BuildInfoProvider(SentryLogger())))
+    val lc = LoadClass()
+    val bip = BuildInfoProvider(SentryLogger())
+    addEventProcessor(AnrV2EventProcessor(lib.context, this, bip))
     addEventProcessor(MainEventProcessor(this))
     createDefaultAndroidEventProcessor(lib.context, this)?.let(::addEventProcessor)
     createSentryRuntimeEventProcessor()?.let(::addEventProcessor)
     createPerformanceAndroidEventProcessor(this)?.let(::addEventProcessor)
+
+    integrations.add(UncaughtExceptionHandlerIntegration())
+    integrations.add(AnrIntegrationFactory.create(lib.context, bip))
+
+    val app = lib.context.applicationContext as Application
+    addIntegration(ActivityLifecycleIntegration(app, bip, ActivityFramesTracker(lc, this)))
+    addIntegration(ActivityBreadcrumbsIntegration(app))
+    addIntegration(UserInteractionIntegration(app, lc))
+    addIntegration(AppComponentsBreadcrumbsIntegration(lib.context))
+    addIntegration(SystemEventsBreadcrumbsIntegration(lib.context))
+    addIntegration(NetworkBreadcrumbsIntegration(lib.context, bip, logger))
 
     i("Metrica initialized")
   }
@@ -72,10 +99,6 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
 
   private val client = globalScope.bindClient(SentryClient(options))
   private val scopes = Scopes(defaultScope, isolationScope, globalScope, "MetricaUnit::init")
-
-  init {
-    UncaughtExceptionHandlerIntegration().also(options::addIntegration).register(scopes, options)
-  }
 
   fun exception(throwable: Throwable) {
     scopes.withScope { scope ->
