@@ -47,6 +47,7 @@ import com.guavapay.paymentsdk.presentation.platform.remember
 import com.guavapay.paymentsdk.presentation.platform.rememberViewModel
 import com.guavapay.paymentsdk.presentation.platform.string
 import com.guavapay.paymentsdk.presentation.screens.Screen
+import com.guavapay.paymentsdk.presentation.screens.contact.ContactVM.Effect.NavigateToPhonePicker
 import io.sentry.compose.SentryModifier.sentryTag
 import io.sentry.compose.SentryTraced
 
@@ -55,12 +56,19 @@ internal object ContactScreen : Screen<ContactRoute, NoActions> {
     val vm = rememberViewModel(::ContactVM, route)
     val state = vm.state.collectAsStateWithLifecycle()
     val parent = LocalParentScrollState.current
-
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
 
     LaunchedEffect("scroll") {
       parent.animateScrollTo(0)
+    }
+
+    LaunchedEffect(Unit) {
+      vm.effects.collect { effect ->
+        when (effect) {
+          is NavigateToPhonePicker -> nav.add(PhoneRoute)
+        }
+      }
     }
 
     Column {
@@ -125,7 +133,7 @@ internal object ContactScreen : Screen<ContactRoute, NoActions> {
           CountryPicker(
             countryCode = state.value.countryIso,
             phoneCode = state.value.countryCode,
-            onClick = { nav.add(PhoneRoute { countryCode, countryIso -> vm.handles.country(countryCode, countryIso) }) },
+            onClick = vm.handles::picker,
             modifier = Modifier.sentryTag("country-picker")
           )
 

@@ -10,14 +10,16 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberType
 import com.guavapay.paymentsdk.LibraryUnit
 import com.guavapay.paymentsdk.R
+import com.guavapay.paymentsdk.presentation.navigation.NavigationEvents.Event
 import com.guavapay.paymentsdk.presentation.navigation.Route.ContactRoute
 import com.guavapay.paymentsdk.presentation.platform.FIELD_DEBOUNCE_MS
 import com.guavapay.paymentsdk.presentation.platform.FieldState
 import com.guavapay.paymentsdk.presentation.platform.Text
-import com.guavapay.paymentsdk.presentation.platform.collectDebounced
 import com.guavapay.paymentsdk.presentation.platform.basy
+import com.guavapay.paymentsdk.presentation.platform.collectDebounced
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,6 +27,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import org.apache.commons.validator.routines.EmailValidator
 import kotlin.coroutines.CoroutineContext
@@ -55,6 +58,9 @@ internal class ContactVM(private val lib: LibraryUnit, private val handle: Saved
     )
   )
   val state: StateFlow<State> = _state.asStateFlow()
+
+  private val _effects = Channel<Effect>()
+  val effects = _effects.receiveAsFlow()
 
   init {
     lib.metrica.breadcrumb("Contact-Init", "Sdk UI", "state")
@@ -120,6 +126,14 @@ internal class ContactVM(private val lib: LibraryUnit, private val handle: Saved
       _state.update { it.copy(phoneState = newState, phoneError = null, phoneDirty = newState != FieldState.EMPTY) }
     }
 
+    fun picker() {
+      launch {
+        _effects.send(Effect.NavigateToPhonePicker)
+        val result = lib.navigation.await<Event.PhoneResult>()
+        country(result.countryCode, result.countryIso)
+      }
+    }
+
     fun onContinue() {
       val s = _state.value
       finalizeEmailNow(s.email)
@@ -127,9 +141,9 @@ internal class ContactVM(private val lib: LibraryUnit, private val handle: Saved
       finalizePhoneNow(s.phone, s.countryIso, s.countryCode)
       val x = _state.value
       if (x.isValid) {
-        val emailOrNull = x.email.takeIf(String::isNotBlank)
-        val phoneOrNull = x.phone.takeIf(String::isNotBlank)?.let { "${x.countryCode}$it" }
-        launch { route.callback(emailOrNull, phoneOrNull) }
+        val email = x.email.takeIf(String::isNotBlank)
+        val phone = x.phone.takeIf(String::isNotBlank)?.let { "${x.countryCode}$it" }
+        launch { lib.navigation.fire(Event.ContactResult(email, phone)) }
       }
     }
   }
@@ -177,13 +191,19 @@ internal class ContactVM(private val lib: LibraryUnit, private val handle: Saved
   private fun isPhoneValid(nsn: String, iso: String, cc: String) = try {
     val parsed = phones.parse("$cc$nsn", iso)
     phones.isValidNumber(parsed)
-  } catch (_: NumberParseException) { false }
+  } catch (_: NumberParseException) {
+    false
+  }
 
   private fun maxNsnLen(iso: String): Int {
     fun len(type: PhoneNumberType) = phones.getExampleNumberForType(iso, type)?.let { phones.getNationalSignificantNumber(it).length } ?: 0
     val m = len(PhoneNumberType.MOBILE)
     val f = len(PhoneNumberType.FIXED_LINE)
     return max(m, f).takeIf { it > 0 } ?: 15
+  }
+
+  sealed interface Effect {
+    data object NavigateToPhonePicker : Effect
   }
 
   data class State(
