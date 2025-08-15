@@ -644,7 +644,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable private fun CompactPaymentResultCard(result: PaymentResult) {
   Card(
-    modifier = Modifier.widthIn(max = 500.dp),
+    modifier = Modifier.widthIn(max = 500.dp).fillMaxWidth(),
     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     shape = MaterialTheme.shapes.large
   ) {
@@ -652,10 +652,11 @@ class MainActivity : ComponentActivity() {
       when (result) {
         is Success -> {
           Text(
-            text = "✅ Payment Success",
+            text = "🟢  Payment Success",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary
           )
+          Spacer(modifier = Modifier.height(6.dp))
           Text(
             text = "$result",
             style = MaterialTheme.typography.bodySmall,
@@ -665,10 +666,11 @@ class MainActivity : ComponentActivity() {
 
         is Unsuccess -> {
           Text(
-            text = "🚫 Payment Unsuccess",
+            text = "🟡  Payment Unsuccess",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.secondary
           )
+          Spacer(modifier = Modifier.height(6.dp))
           Text(
             text = "$result",
             style = MaterialTheme.typography.bodySmall,
@@ -678,10 +680,11 @@ class MainActivity : ComponentActivity() {
 
         is Error -> {
           Text(
-            text = "❌ Payment Error",
+            text = "🔴  Payment Error",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.error
           )
+          Spacer(modifier = Modifier.height(6.dp))
           Text(
             text = result.throwable?.toString() ?: "Unknown error",
             style = MaterialTheme.typography.bodySmall,
@@ -690,10 +693,11 @@ class MainActivity : ComponentActivity() {
         }
         is Cancel -> {
           Text(
-            text = "⏹️ Payment Canceled",
+            text = "🔵  Payment Canceled",
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.outline
+            color = MaterialTheme.colorScheme.onSurface
           )
+          Spacer(modifier = Modifier.height(6.dp))
           Text(
             text = "User canceled the payment",
             style = MaterialTheme.typography.bodySmall,
