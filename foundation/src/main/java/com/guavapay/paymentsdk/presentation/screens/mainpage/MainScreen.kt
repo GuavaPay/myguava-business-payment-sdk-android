@@ -120,12 +120,12 @@ internal object MainScreen : Screen<HomeRoute, Actions> {
 
       vm.effects.collect { effect ->
         when (effect) {
-          is AskContacts -> nav.add(ContactRoute(effect.countryIso, effect.callback))
+          is AskContacts -> nav.add(ContactRoute(effect.countryIso))
           is AbortError -> actions.showDialog(AbortRoute(effect.throwable))
           is ShowError -> Unit
           is AbortGuard -> Unit
-          is ConfirmDeleteCard -> actions.showDialog(CardRemoveRoute(effect.cardId, effect.cardName, effect.onDeleteConfirmed))
-          is EditCard -> actions.showDialog(CardEditRoute(effect.cardId, effect.cardName, effect.onEditConfirmed))
+          is ConfirmDeleteCard -> actions.showDialog(CardRemoveRoute(effect.cardId, effect.cardName))
+          is EditCard -> actions.showDialog(CardEditRoute(effect.cardId, effect.cardName))
           is Finish -> actions.finish(effect.result)
           is FocusPan -> panReq.requestFocus()
           is FocusExp -> expReq.requestFocus()
