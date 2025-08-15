@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -20,6 +21,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import com.guavapay.paymentsdk.R
 import com.guavapay.paymentsdk.presentation.components.atoms.Button
+import com.guavapay.paymentsdk.presentation.navigation.NavigationEvents.Event
 import com.guavapay.paymentsdk.presentation.navigation.Route
 import com.guavapay.paymentsdk.presentation.navigation.Route.CardRemoveRoute
 import com.guavapay.paymentsdk.presentation.navigation.rememberNavBackStack
@@ -28,14 +30,19 @@ import com.guavapay.paymentsdk.presentation.platform.Text
 import com.guavapay.paymentsdk.presentation.platform.annotated
 import com.guavapay.paymentsdk.presentation.screens.Screen
 import com.guavapay.paymentsdk.presentation.screens.management.CardRemoveScreen.Actions
+import com.guavapay.paymentsdk.rememberLibraryUnit
 import io.sentry.compose.SentryModifier.sentryTag
 import io.sentry.compose.SentryTraced
+import kotlinx.coroutines.launch
 import java.io.Serializable
 
 internal object CardRemoveScreen : Screen<CardRemoveRoute, Actions> {
   data class Actions(val close: () -> Unit = @JvmSerializableLambda {}) : Serializable { private fun readResolve(): Any = Actions() }
 
   @Composable override fun invoke(nav: SnapshotStateList<Route>, route: CardRemoveRoute, actions: Actions) = SentryTraced("card-remove-screen") {
+    val lib = rememberLibraryUnit()
+    val scope = rememberCoroutineScope()
+
     Column(
       modifier = Modifier
         .fillMaxWidth()
@@ -67,8 +74,8 @@ internal object CardRemoveScreen : Screen<CardRemoveRoute, Actions> {
 
       Button(
         onClick = {
+          scope.launch { lib.navigation.fire(Event.ConfirmCardRemove) }
           actions.close()
-          route.onDeleteConfirmed(route.cardId)
         },
         modifier = Modifier.fillMaxWidth().sentryTag("delete-button"),
         style = Button.danger()
