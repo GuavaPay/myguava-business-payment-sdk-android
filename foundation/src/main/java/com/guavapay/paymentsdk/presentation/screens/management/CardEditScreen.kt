@@ -70,8 +70,8 @@ internal object CardEditScreen : Screen<CardEditRoute, Actions> {
         maxLength = 200,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
         onDoneAction = {
+          vm.handles.confirm()
           actions.close()
-          route.onEditConfirmed(route.cardId, state.value.cardName)
         },
         modifier = Modifier.sentryTag("card-name-input").ime(parent)
       )
@@ -80,8 +80,8 @@ internal object CardEditScreen : Screen<CardEditRoute, Actions> {
 
       Button(
         onClick = {
+          vm.handles.confirm()
           actions.close()
-          route.onEditConfirmed(route.cardId, state.value.cardName)
         },
         modifier = Modifier.fillMaxWidth().sentryTag("save-button"),
         enabled = state.value.cardNameError == null,
