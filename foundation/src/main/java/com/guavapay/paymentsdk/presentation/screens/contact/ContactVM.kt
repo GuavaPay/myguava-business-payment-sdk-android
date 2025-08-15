@@ -10,6 +10,7 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil
 import com.google.i18n.phonenumbers.PhoneNumberUtil.PhoneNumberType
 import com.guavapay.paymentsdk.LibraryUnit
 import com.guavapay.paymentsdk.R
+import com.guavapay.paymentsdk.presentation.navigation.NavigationEvents.Companion.key
 import com.guavapay.paymentsdk.presentation.navigation.NavigationEvents.Event
 import com.guavapay.paymentsdk.presentation.navigation.Route.ContactRoute
 import com.guavapay.paymentsdk.presentation.platform.FIELD_DEBOUNCE_MS
@@ -128,9 +129,11 @@ internal class ContactVM(private val lib: LibraryUnit, private val handle: Saved
 
     fun picker() {
       launch {
-        _effects.send(Effect.NavigateToPhonePicker)
-        val result = lib.navigation.await<Event.PhoneResult>()
-        country(result.countryCode, result.countryIso)
+        with(key()) {
+          _effects.send(Effect.NavigateToPhonePicker(this))
+          val result = lib.navigation.await<Event.PhoneResult>(this)
+          country(result.countryCode, result.countryIso)
+        }
       }
     }
 
@@ -143,7 +146,7 @@ internal class ContactVM(private val lib: LibraryUnit, private val handle: Saved
       if (x.isValid) {
         val email = x.email.takeIf(String::isNotBlank)
         val phone = x.phone.takeIf(String::isNotBlank)?.let { "${x.countryCode}$it" }
-        launch { lib.navigation.fire(Event.ContactResult(email, phone)) }
+        launch { lib.navigation.fire(Event.ContactResult(route.requestKey, email, phone)) }
       }
     }
   }
@@ -203,7 +206,7 @@ internal class ContactVM(private val lib: LibraryUnit, private val handle: Saved
   }
 
   sealed interface Effect {
-    data object NavigateToPhonePicker : Effect
+    data class NavigateToPhonePicker(val requestKey: String) : Effect
   }
 
   data class State(

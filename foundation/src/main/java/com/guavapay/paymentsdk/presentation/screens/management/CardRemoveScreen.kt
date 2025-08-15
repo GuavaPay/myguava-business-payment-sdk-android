@@ -74,8 +74,8 @@ internal object CardRemoveScreen : Screen<CardRemoveRoute, Actions> {
 
       Button(
         onClick = {
-          scope.launch { lib.navigation.fire(Event.ConfirmCardRemove) }
           actions.close()
+          scope.launch { lib.navigation.fire(Event.ConfirmCardRemove(route.requestKey)) }
         },
         modifier = Modifier.fillMaxWidth().sentryTag("delete-button"),
         style = Button.danger()
@@ -105,5 +105,5 @@ internal object CardRemoveScreen : Screen<CardRemoveRoute, Actions> {
 }
 
 @PreviewLightDark @Composable private fun CardRemoveScreenPreview() {
-  PreviewTheme { CardRemoveScreen(rememberNavBackStack(), CardRemoveRoute("card123", "Homeless Card *5249"), Actions()) }
+  PreviewTheme { CardRemoveScreen(rememberNavBackStack(), CardRemoveRoute("card123", "Homeless Card *5249", ""), Actions()) }
 }

@@ -44,7 +44,8 @@ import com.guavapay.paymentsdk.network.services.OrderApi.Models.GetOrderResponse
 import com.guavapay.paymentsdk.platform.algorithm.luhn
 import com.guavapay.paymentsdk.platform.arrays.intersectByName
 import com.guavapay.paymentsdk.platform.coroutines.ExceptionHandler
-import com.guavapay.paymentsdk.presentation.navigation.NavigationEvents.Event
+import com.guavapay.paymentsdk.presentation.navigation.NavigationEvents
+import com.guavapay.paymentsdk.presentation.navigation.NavigationEvents.Companion.key
 import com.guavapay.paymentsdk.presentation.platform.FieldState
 import com.guavapay.paymentsdk.presentation.platform.Text
 import com.guavapay.paymentsdk.presentation.platform.basy
@@ -71,6 +72,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.Json
+import java.util.UUID
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
@@ -166,7 +168,7 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
 
   sealed interface Effect {
     data class ShowError(val message: Text) : Effect
-    data class AskContacts(val countryIso: String? = null) : Effect
+    data class AskContacts(val countryIso: String? = null, val requestKey: String) : Effect
     data class AbortError(val throwable: GatewayException? = null) : Effect
     data object AbortGuard : Effect
     data class Finish(val result: PaymentResult) : Effect
@@ -175,8 +177,8 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
     data object FocusCvv : Effect
     data object FocusCardholder : Effect
     data object HideKeyboard : Effect
-    data class ConfirmDeleteCard(val cardId: String, val cardName: String) : Effect
-    data class EditCard(val cardId: String, val cardName: String) : Effect
+    data class ConfirmDeleteCard(val cardId: String, val cardName: String, val requestKey: String) : Effect
+    data class EditCard(val cardId: String, val cardName: String, val requestKey: String) : Effect
     data class Require3ds(val params: ChallengeParameters, val tx: Transaction) : Effect
   }
 
@@ -486,8 +488,11 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
   val handles = Handles() ; inner class Handles {
     fun changeContactInfo() {
       launch {
-        _effects.send(Effect.AskContacts(countryIso = internal.order?.payer?.address?.country))
-        val result = lib.navigation.await<Event.ContactResult>()
+        val result = with(key()) {
+          _effects.send(Effect.AskContacts(countryIso = internal.order?.payer?.address?.country, requestKey = this))
+          lib.navigation.await<NavigationEvents.Event.ContactResult>(this)
+        }
+
         update {
           it.copy(
             contact = it.contact?.let { c ->
@@ -508,8 +513,11 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
       val contact = state.value.contact
       if (contact == null || (contact.maskedEmail.isBlank() && contact.maskedPhone.isBlank())) {
         launch {
-          _effects.send(Effect.AskContacts(countryIso = internal.order?.payer?.address?.country))
-          val result = lib.navigation.await<Event.ContactResult>()
+          val result = with(key()) {
+            _effects.send(Effect.AskContacts(countryIso = internal.order?.payer?.address?.country, requestKey = this))
+            lib.navigation.await<NavigationEvents.Event.ContactResult>(this)
+          }
+
           update {
             it.copy(
               contact = it.contact?.let { c ->
@@ -865,9 +873,12 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
       launch {
         val card = state.value.saved?.cards?.find { it.id == id } ?: return@launch
         val name = card.cardName + " *" + card.maskedPan.takeLast(4)
-        _effects.send(Effect.ConfirmDeleteCard(cardId = id, cardName = name))
-        lib.navigation.await<Event.ConfirmCardRemove>()
-        confirmDeleteCard(id)
+        with(key()) {
+          _effects.send(Effect.ConfirmDeleteCard(cardId = id, cardName = name, requestKey = this))
+          lib.navigation.await<NavigationEvents.Event.ConfirmCardRemove>(this)
+          confirmDeleteCard(id)
+        }
+
         lib.metrica.breadcrumb("SavedCard-Delete-Requested", "Sdk UI", "action")
       }
     }
@@ -893,9 +904,12 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
     fun editCard(id: String) {
       launch {
         val name = state.value.saved?.cards?.find { it.id == id }?.cardName ?: return@launch
-        _effects.send(Effect.EditCard(cardId = id, cardName = name))
-        val result = lib.navigation.await<Event.ConfirmCardEdit>()
-        confirmEditCard(id, result.cardName)
+        with(key()) {
+          _effects.send(Effect.EditCard(cardId = id, cardName = name, requestKey = this))
+          val result = lib.navigation.await<NavigationEvents.Event.ConfirmCardEdit>(this)
+          confirmEditCard(id, result.cardName)
+        }
+
         lib.metrica.breadcrumb("SavedCard-Edit-Requested", "Sdk UI", "action")
       }
     }

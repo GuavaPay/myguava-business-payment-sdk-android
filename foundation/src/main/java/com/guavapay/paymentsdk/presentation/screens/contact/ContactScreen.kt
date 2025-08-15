@@ -66,7 +66,7 @@ internal object ContactScreen : Screen<ContactRoute, NoActions> {
     LaunchedEffect(Unit) {
       vm.effects.collect { effect ->
         when (effect) {
-          is NavigateToPhonePicker -> nav.add(PhoneRoute)
+          is NavigateToPhonePicker -> nav.add(PhoneRoute(effect.requestKey))
         }
       }
     }
@@ -187,6 +187,6 @@ internal object ContactScreen : Screen<ContactRoute, NoActions> {
 
 @PreviewLightDark @Composable private fun ContactScreenPreview() {
   PreviewTheme {
-    ContactScreen(rememberNavBackStack(), ContactRoute(), NoActions)
+    ContactScreen(rememberNavBackStack(), ContactRoute(requestKey = ""), NoActions)
   }
 }

@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-internal class CardEditVM(private val lib: LibraryUnit, private val handle: SavedStateHandle, route: CardEditRoute) : ViewModel() {
+internal class CardEditVM(private val lib: LibraryUnit, private val handle: SavedStateHandle, private val route: CardEditRoute) : ViewModel() {
   private val x by basy(lib)
 
   private val _state = MutableStateFlow(State(cardName = handle["cardName"] ?: route.cardName))
@@ -33,9 +33,7 @@ internal class CardEditVM(private val lib: LibraryUnit, private val handle: Save
         return
       }
 
-      x.launch {
-        lib.navigation.fire(Event.ConfirmCardEdit(cardName))
-      }
+      x.launch { lib.navigation.fire(Event.ConfirmCardEdit(route.requestKey, cardName)) }
     }
   }
 

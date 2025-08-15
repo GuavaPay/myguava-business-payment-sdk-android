@@ -112,5 +112,5 @@ internal object CardEditScreen : Screen<CardEditRoute, Actions> {
 }
 
 @PreviewLightDark @Composable private fun CardEditScreenPreview() {
-  PreviewTheme { CardEditScreen(rememberNavBackStack(), CardEditRoute("card123", "Homeless Card"), Actions()) }
+  PreviewTheme { CardEditScreen(rememberNavBackStack(), CardEditRoute("card123", "Homeless Card", ""), Actions()) }
 }
