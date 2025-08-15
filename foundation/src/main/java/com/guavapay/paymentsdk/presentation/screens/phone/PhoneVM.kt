@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import com.guavapay.paymentsdk.LibraryUnit
 import com.guavapay.paymentsdk.integrations.local.Country
 import com.guavapay.paymentsdk.integrations.local.LocalCountries
-import com.guavapay.paymentsdk.presentation.navigation.Route.PhoneRoute
+import com.guavapay.paymentsdk.presentation.navigation.NavigationEvents.Event
 import com.guavapay.paymentsdk.presentation.platform.basy
 import com.guavapay.paymentsdk.presentation.platform.retrow
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.update
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
-internal class PhoneVM(private val lib: LibraryUnit, private val handle: SavedStateHandle, private val route: PhoneRoute) : ViewModel() {
+internal class PhoneVM(private val lib: LibraryUnit, private val handle: SavedStateHandle) : ViewModel() {
   private val x by basy(lib)
 
   private inline fun launch(
@@ -93,7 +93,7 @@ internal class PhoneVM(private val lib: LibraryUnit, private val handle: SavedSt
     fun search(q: String) { handle["query"] = q }
     fun country(country: Country) {
       lib.metrica.breadcrumb("Phone-Selected", "Sdk UI", "action", data = mapOf("country_code" to country.countryCode))
-      route.callback(country.phoneCode, country.countryCode)
+      launch { lib.navigation.fire(Event.PhoneResult(country.phoneCode, country.countryCode)) }
     }
   }
 
