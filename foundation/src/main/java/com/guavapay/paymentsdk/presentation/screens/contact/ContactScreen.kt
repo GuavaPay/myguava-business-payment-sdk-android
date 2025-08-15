@@ -149,7 +149,8 @@ internal object ContactScreen : Screen<ContactRoute, NoActions> {
             },
             singleLine = true,
             visualTransformation = phoneVisual,
-            modifier = Modifier.weight(1f).sentryTag("phone-input").ime(parent)
+            modifier = Modifier.weight(1f).sentryTag("phone-input").ime(parent),
+            fieldModifier = Modifier.fillMaxWidth()
           )
         }
 
