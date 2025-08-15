@@ -25,6 +25,7 @@ import com.guavapay.paymentsdk.presentation.components.sections.NetworksRow
 import com.guavapay.paymentsdk.presentation.platform.CardNumberVisualTransformation
 import com.guavapay.paymentsdk.presentation.platform.LocalParentScrollState
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
+import com.guavapay.paymentsdk.presentation.platform.ime
 import com.guavapay.paymentsdk.presentation.platform.string
 import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM
 import com.guavapay.paymentsdk.presentation.screens.mainpage._subsections.newcard._components.CardInputsBlock
@@ -67,7 +68,7 @@ internal object NewCardSection {
 
     Column(modifier = modifier.fillMaxWidth()) {
       TextField(
-        modifier = Modifier.focusRequester(panFocus).sentryTag("pan-input"),
+        modifier = Modifier.focusRequester(panFocus).sentryTag("pan-input").ime(parent),
         header = stringResource(R.string.initial_newcard_number),
         value = state.fields.pan,
         onValueChange = actions.onPan,
@@ -79,7 +80,7 @@ internal object NewCardSection {
         error = state.fields.panError?.string(),
         singleLine = true,
         maxLength = 19,
-        visualTransformation = CardNumberVisualTransformation()
+        visualTransformation = CardNumberVisualTransformation(),
       )
 
       Spacer(Modifier.height(12.dp))
@@ -105,7 +106,7 @@ internal object NewCardSection {
         Spacer(Modifier.height(12.dp))
 
         TextField(
-          modifier = Modifier.focusRequester(chFocus).sentryTag("cardholder-input"),
+          modifier = Modifier.focusRequester(chFocus).sentryTag("cardholder-input").ime(parent),
           header = stringResource(R.string.initial_newcard_cardholder_name),
           value = state.fields.ch,
           onValueChange = actions.onCh,

@@ -16,7 +16,9 @@ import androidx.compose.ui.unit.dp
 import com.guavapay.paymentsdk.R
 import com.guavapay.paymentsdk.presentation.components.atoms.TextField
 import com.guavapay.paymentsdk.presentation.platform.ExpiryDateVisualTransformation
+import com.guavapay.paymentsdk.presentation.platform.LocalParentScrollState
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
+import com.guavapay.paymentsdk.presentation.platform.ime
 import com.guavapay.paymentsdk.presentation.platform.rememberCvcPeekState
 import com.guavapay.paymentsdk.presentation.platform.string
 import com.guavapay.paymentsdk.presentation.screens.mainpage.MainVM
@@ -40,13 +42,15 @@ internal object CardInputsBlock {
     cvvFocus: FocusRequester,
     actions: Actions = Actions()
   ) {
+    val parent = LocalParentScrollState.current
     val ime = if (holderAvailable || saveEnabled) ImeAction.Next else ImeAction.Done
 
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
       TextField(
         modifier = Modifier
           .weight(1f)
-          .focusRequester(expFocus),
+          .focusRequester(expFocus)
+          .ime(parent),
         value = state.fields.exp,
         onValueChange = actions.onExp,
         onFocusLost = actions.onExpBlur,
@@ -63,7 +67,8 @@ internal object CardInputsBlock {
       TextField(
         modifier = Modifier
           .weight(1f)
-          .focusRequester(cvvFocus),
+          .focusRequester(cvvFocus)
+          .ime(parent),
         header = stringResource(R.string.initial_newcard_cvv),
         value = cvv,
         onValueChange = { transform.onTextChanged(it) ; actions.onCvv(it) },

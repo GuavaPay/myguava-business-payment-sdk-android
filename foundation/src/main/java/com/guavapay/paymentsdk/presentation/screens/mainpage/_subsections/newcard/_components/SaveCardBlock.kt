@@ -23,8 +23,10 @@ import androidx.compose.ui.unit.dp
 import com.guavapay.paymentsdk.R
 import com.guavapay.paymentsdk.presentation.components.atoms.TextField
 import com.guavapay.paymentsdk.presentation.components.molecules.TitledCheckbox
+import com.guavapay.paymentsdk.presentation.platform.LocalParentScrollState
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
 import com.guavapay.paymentsdk.presentation.platform.Text
+import com.guavapay.paymentsdk.presentation.platform.ime
 import com.guavapay.paymentsdk.presentation.platform.string
 
 internal object SaveCardBlock {
@@ -55,6 +57,8 @@ internal object SaveCardBlock {
         exit = fadeOut(animationSpec = tween(300)) + slideOutVertically(animationSpec = tween(300), targetOffsetY = { -it / 2 })
       ) {
         Column {
+          val parent = LocalParentScrollState.current
+
           Spacer(Modifier.height(24.dp))
 
           TextField(
@@ -66,7 +70,8 @@ internal object SaveCardBlock {
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
             onFocusLost = actions.onNameBlur,
             error = error?.string(),
-            onDoneAction = actions.onDone
+            onDoneAction = actions.onDone,
+            modifier = Modifier.ime(parent)
           )
         }
       }
