@@ -48,7 +48,9 @@ import com.guavapay.paymentsdk.R
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme
 import com.guavapay.paymentsdk.presentation.components.atoms.Radio
 import com.guavapay.paymentsdk.presentation.components.atoms.TextField
+import com.guavapay.paymentsdk.presentation.platform.LocalParentScrollState
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
+import com.guavapay.paymentsdk.presentation.platform.ime
 import com.guavapay.paymentsdk.presentation.platform.rememberCvcPeekState
 import io.sentry.compose.SentryModifier.sentryTag
 
@@ -72,6 +74,7 @@ internal object SavedCardItem {
     actions: Actions = Actions(),
     modifier: Modifier = Modifier
   ) {
+    val parent = LocalParentScrollState.current
     var menuOpen by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
@@ -169,7 +172,8 @@ internal object SavedCardItem {
           modifier = Modifier
             .height(48.dp)
             .width(92.dp)
-            .sentryTag("cvv-input"),
+            .sentryTag("cvv-input")
+            .ime(parent),
           value = cvvValue,
           maxLength = scheme.cvc,
           onValueChange = {
@@ -202,6 +206,7 @@ internal object SavedCardItem {
       MenuButton(
         isOpen = menuOpen,
         onClick = {
+          keyboard?.hide()
           menuOpen = !menuOpen
           actions.onMenu()
         },

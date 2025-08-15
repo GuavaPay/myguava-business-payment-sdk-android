@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
@@ -26,13 +27,15 @@ import io.sentry.compose.SentryModifier.sentryTag
     modifier = modifier,
     horizontalArrangement = Arrangement.spacedBy(12.dp)
   ) {
+    val kb = LocalSoftwareKeyboardController.current
+
     Box(
       modifier = Modifier
         .size(width = 40.dp, height = 46.dp)
         .clip(RoundedCornerShape(8.dp))
         .background(MaterialTheme.colorScheme.surface)
         .border(1.dp, color = MaterialTheme.colorScheme.onSurface, shape = RoundedCornerShape(8.dp))
-        .clickable { onEditClick() }
+        .clickable { kb?.hide() ; onEditClick() }
         .sentryTag("edit-card-button"),
       contentAlignment = Alignment.Center
     ) {
@@ -49,7 +52,7 @@ import io.sentry.compose.SentryModifier.sentryTag
         .size(width = 40.dp, height = 46.dp)
         .clip(RoundedCornerShape(8.dp))
         .background(MaterialTheme.colorScheme.error)
-        .clickable { onDeleteClick() }
+        .clickable { kb?.hide() ; onDeleteClick() }
         .sentryTag("delete-card-button"),
       contentAlignment = Alignment.Center,
     ) {
