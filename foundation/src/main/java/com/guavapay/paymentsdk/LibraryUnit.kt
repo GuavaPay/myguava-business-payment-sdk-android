@@ -12,6 +12,7 @@ import com.guavapay.paymentsdk.metrica.MetricaUnit
 import com.guavapay.paymentsdk.network.NetworkUnit
 import com.guavapay.paymentsdk.platform.coroutines.CoroutineUnit
 import com.guavapay.paymentsdk.platform.function.lazy
+import com.guavapay.paymentsdk.presentation.navigation.NavigationEvents
 import com.guavapay.paymentsdk.presentation.platform.remember
 import kotlin.reflect.KProperty0
 
@@ -34,8 +35,9 @@ internal class LibraryUnit(val context: Context) {
   val coroutine by lazy(::CoroutineUnit)
   val network by lazy(::NetworkUnit)
   val metrica by lazy(::MetricaUnit)
+  val navigation by lazy(::NavigationEvents)
 
-  private val initialize = listOf(::state, ::coroutine, ::network, ::metrica)
+  private val initialize = listOf(::state, ::coroutine, ::network, ::metrica, ::navigation)
   fun initialize(): LibraryUnit {
     i("Starting initialization of library components")
     initialize.forEach(KProperty0<*>::invoke)
