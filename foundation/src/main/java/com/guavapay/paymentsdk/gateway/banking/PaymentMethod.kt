@@ -11,7 +11,7 @@ sealed interface PaymentMethod : Serializable {
    * Provides a set of all standard payment method entries.
    */
   companion object {
-    val Entries get() = setOf(PayPal, GooglePay, Card(), SavedCard())
+    val Entries get() = setOf(PayPal, GooglePay, PaymentCard(), PaymentCardBinding())
   }
 
   /** Represents payment via PayPal. */
@@ -25,7 +25,7 @@ sealed interface PaymentMethod : Serializable {
    *
    * @property flags Configuration flags for the new card input form.
    */
-  data class Card(val flags: Flags = Flags()) : PaymentMethod {
+  data class PaymentCard(val flags: Flags = Flags()) : PaymentMethod {
     /**
      * Configuration flags for the new card payment method.
      *
@@ -40,7 +40,7 @@ sealed interface PaymentMethod : Serializable {
    *
    * @property flags Configuration flags for the saved card selection.
    */
-  data class SavedCard(val flags: Flags = Flags()) : PaymentMethod {
+  data class PaymentCardBinding(val flags: Flags = Flags()) : PaymentMethod {
     /**
      * Configuration flags for the saved card payment method.
      *

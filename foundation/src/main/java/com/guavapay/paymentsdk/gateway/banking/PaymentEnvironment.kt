@@ -5,7 +5,7 @@ package com.guavapay.paymentsdk.gateway.banking
  *
  * @author Pavel Erokhin (MairwunNx / GuavaAgent007)
  */
-enum class PaymentCircuit {
+enum class PaymentEnvironment {
   /** For development and testing purposes, typically with mock data. */
   Development,
 

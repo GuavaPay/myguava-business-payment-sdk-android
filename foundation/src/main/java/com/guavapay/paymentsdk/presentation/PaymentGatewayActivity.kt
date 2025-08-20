@@ -68,7 +68,7 @@ internal class PaymentGatewayActivity : ComponentActivity() {
     super.onDestroy().also { i("SDK activity destroying") }
   }
 
-  private fun enableSecureFlags() = window.setFlags(FLAG_SECURE, FLAG_SECURE)
+  private fun enableSecureFlags() = /*window.setFlags(FLAG_SECURE, FLAG_SECURE)*/ Unit
 
   private fun ensureDeviceData() = Device(ip = localipv4())
 

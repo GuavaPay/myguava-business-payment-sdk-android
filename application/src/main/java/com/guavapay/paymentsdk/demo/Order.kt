@@ -1,6 +1,6 @@
 package com.guavapay.paymentsdk.demo
 
-import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit
+import com.guavapay.paymentsdk.gateway.banking.PaymentEnvironment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -60,8 +60,8 @@ suspend fun createOrder(baseUrl: String, token: String, amount: Double, currency
   }
 }
 
-fun getBaseUrlFor(circuit: PaymentCircuit) = when (circuit) {
-  PaymentCircuit.Development -> "https://cardium-cpg-dev.guavapay.com"
-  PaymentCircuit.Sandbox -> "https://sandbox-pgw.myguava.com"
-  PaymentCircuit.Production -> "https://api-pgw.myguava.com"
+fun getBaseUrlFor(circuit: PaymentEnvironment) = when (circuit) {
+  PaymentEnvironment.Development -> "https://cardium-cpg-dev.guavapay.com"
+  PaymentEnvironment.Sandbox -> "https://sandbox-pgw.myguava.com"
+  PaymentEnvironment.Production -> "https://api-pgw.myguava.com"
 }

@@ -5,7 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.startup.AppInitializer
-import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit
+import com.guavapay.paymentsdk.gateway.banking.PaymentEnvironment
 import com.guavapay.paymentsdk.gateway.launcher.PaymentGatewayPayload
 import com.guavapay.paymentsdk.logging.i
 import com.guavapay.paymentsdk.metrica.MetricaUnit
@@ -22,7 +22,7 @@ import kotlin.reflect.KProperty0
       orderId = "<null>",
       sessionToken = "<null>",
       locale = androidx.compose.ui.text.intl.Locale.current.platformLocale,
-      circuit = PaymentCircuit.Development,
+      environment = PaymentEnvironment.Development,
       threedsLooknfeel = null,
     )
   }

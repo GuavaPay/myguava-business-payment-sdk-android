@@ -34,6 +34,6 @@ import com.guavapay.paymentsdk.rememberLibraryUnit
 
 @PreviewLightDark @Composable private fun NetworksRowPreview() {
   PreviewTheme {
-    NetworksRow(rememberLibraryUnit().state.payload().schemes.toList())
+    NetworksRow(rememberLibraryUnit().state.payload().availableCardSchemes.toList())
   }
 }

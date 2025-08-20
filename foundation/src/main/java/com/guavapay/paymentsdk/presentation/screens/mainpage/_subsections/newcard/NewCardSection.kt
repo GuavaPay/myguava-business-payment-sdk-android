@@ -169,6 +169,6 @@ internal object NewCardSection {
   PreviewTheme {
     val lib = rememberLibraryUnit()
     val focuses = List(4) { remember(::FocusRequester) }
-    NewCardSection(state = MainVM.State(networks = lib.state.payload().schemes.toList()), panFocus = focuses[0], expFocus = focuses[1], cvvFocus = focuses[2], chFocus = focuses[3], actions = NewCardSection.Actions())
+    NewCardSection(state = MainVM.State(networks = lib.state.payload().availableCardSchemes.toList()), panFocus = focuses[0], expFocus = focuses[1], cvvFocus = focuses[2], chFocus = focuses[3], actions = NewCardSection.Actions())
   }
 }

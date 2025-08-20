@@ -5,7 +5,7 @@ package com.guavapay.paymentsdk.network
 import com.guavapay.paymentsdk.LibraryUnit
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme
-import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit
+import com.guavapay.paymentsdk.gateway.banking.PaymentEnvironment
 import com.guavapay.paymentsdk.logging.d
 import com.guavapay.paymentsdk.logging.i
 import com.guavapay.paymentsdk.network.serializers.BigDecimalSerializer
@@ -78,10 +78,10 @@ internal class NetworkUnit(private val lib: LibraryUnit) {
   }
 
   val services = Services(); inner class Services() {
-    private val baseUrl by lazy { when (lib.state.payload().circuit) {
-      PaymentCircuit.Development -> "https://cardium-cpg-dev.guavapay.com"
-      PaymentCircuit.Sandbox -> "https://sandbox-pgw.myguava.com"
-      PaymentCircuit.Production -> "https://api-pgw.myguava.com"
+    private val baseUrl by lazy { when (lib.state.payload().environment) {
+      PaymentEnvironment.Development -> "https://cardium-cpg-dev.guavapay.com"
+      PaymentEnvironment.Sandbox -> "https://sandbox-pgw.myguava.com"
+      PaymentEnvironment.Production -> "https://api-pgw.myguava.com"
       null -> lib.context.manifestFields().baseUrl
     } }
 

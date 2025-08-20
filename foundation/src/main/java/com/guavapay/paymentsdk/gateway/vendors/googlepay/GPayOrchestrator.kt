@@ -21,9 +21,9 @@ import com.guavapay.paymentsdk.gateway.banking.GatewayException.GooglePayExcepti
 import com.guavapay.paymentsdk.gateway.banking.GatewayException.GooglePayException.GooglePayNotInitializedException
 import com.guavapay.paymentsdk.gateway.banking.GatewayException.GooglePayException.GooglePayNotReadyException
 import com.guavapay.paymentsdk.gateway.banking.GatewayException.GooglePayException.GooglePayUnknownException
-import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit.Development
-import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit.Production
-import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit.Sandbox
+import com.guavapay.paymentsdk.gateway.banking.PaymentEnvironment.Development
+import com.guavapay.paymentsdk.gateway.banking.PaymentEnvironment.Production
+import com.guavapay.paymentsdk.gateway.banking.PaymentEnvironment.Sandbox
 import com.guavapay.paymentsdk.gateway.vendors.googlepay.GPayEnvironment.PRODUCTION
 import com.guavapay.paymentsdk.gateway.vendors.googlepay.GPayEnvironment.TEST
 import com.guavapay.paymentsdk.gateway.vendors.googlepay.GPayResult.Canceled
@@ -151,7 +151,7 @@ internal class GPayOrchestrator(private val context: Context, private val order:
   }
 
   private fun determineEnvironment(): GPayEnvironment {
-    val circuit = LibraryUnit.from(context).state.payload().circuit
+    val circuit = LibraryUnit.from(context).state.payload().environment
     return when (circuit) {
       Production -> PRODUCTION
       Sandbox -> TEST

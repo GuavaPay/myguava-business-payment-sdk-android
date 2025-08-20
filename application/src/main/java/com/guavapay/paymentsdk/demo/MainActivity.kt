@@ -52,7 +52,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.max
 import androidx.compose.ui.util.fastForEach
 import com.guavapay.paymentsdk.demo.theme.PaymentSdkTheme
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory
@@ -65,8 +64,7 @@ import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme.DINERS_CLUB
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme.MASTERCARD
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme.UNIONPAY
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme.VISA
-import com.guavapay.paymentsdk.gateway.banking.PaymentCircuit
-import com.guavapay.paymentsdk.gateway.banking.PaymentKind
+import com.guavapay.paymentsdk.gateway.banking.PaymentEnvironment
 import com.guavapay.paymentsdk.gateway.banking.PaymentMethod
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Cancel
@@ -99,11 +97,10 @@ class MainActivity : ComponentActivity() {
   var processing by rememberSaveable { mutableStateOf(false) }
   var paymentState by rememberSaveable { mutableStateOf<PaymentGatewayPayload?>(null) }
 
-  var circuit by rememberSaveable { mutableStateOf(PaymentCircuit.Sandbox) }
+  var circuit by rememberSaveable { mutableStateOf(PaymentEnvironment.Sandbox) }
   var token by rememberSaveable { mutableStateOf("sk_sand_ZwYAAAAAAADSPUyUhFygHZTn+TH/bDZ6RsZljO3+qhAf+Ed1HPA4jQ") }
   var sum by rememberSaveable { mutableStateOf("100.25") }
   var currency by rememberSaveable { mutableStateOf("GBP") }
-  var kind by rememberSaveable { mutableStateOf<PaymentKind>(PaymentKind.Pay) }
 
   var phoneNumber by rememberSaveable { mutableStateOf("+442045773333") }
   var email by rememberSaveable { mutableStateOf("example@example.com") }
@@ -137,7 +134,6 @@ class MainActivity : ComponentActivity() {
       currency = currency,
       phoneNumber = phoneNumber,
       email = email,
-      kind = kind,
       onCircuitChange = { circuit = it },
       onTokenChange = { token = it },
       onSumChange = { newValue ->
@@ -147,7 +143,6 @@ class MainActivity : ComponentActivity() {
       onCurrencyChange = { currency = it },
       onPhoneNumberChange = { phoneNumber = it.trim() },
       onEmailChange = { email = it.trim() },
-      onKindChange = { kind = it },
     )
 
     Spacer(modifier = Modifier.height(16.dp))
@@ -208,24 +203,23 @@ class MainActivity : ComponentActivity() {
 
             val selectedMethods = mutableSetOf<PaymentMethod>().apply {
               if (selectedSchemes.isNotEmpty() && selectedCardTypes.isNotEmpty()) {
-                add(PaymentMethod.Card())
+                add(PaymentMethod.PaymentCard())
               }
               if (googlePayEnabled && selectedSchemes.isNotEmpty()) {
                 add(PaymentMethod.GooglePay)
               }
               if (savedCardEnabled) {
-                add(PaymentMethod.SavedCard())
+                add(PaymentMethod.PaymentCardBinding())
               }
             }
 
             val state = PaymentGatewayPayload(
               response.order.id,
               response.order.sessionToken,
-              methods = selectedMethods.toSet(),
-              schemes = selectedSchemes.toSet(),
-              categories = selectedCardTypes.toSet(),
-              circuit = circuit,
-              kind = kind,
+              availablePaymentMethods = selectedMethods.toSet(),
+              availableCardSchemes = selectedSchemes.toSet(),
+              availableCardProductCategories = selectedCardTypes.toSet(),
+              environment = circuit,
             )
 
             paymentState = state
@@ -276,24 +270,21 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable private fun ApiConfigurationCard(
-  circuit: PaymentCircuit,
+  circuit: PaymentEnvironment,
   token: String,
   sum: String,
   currency: String,
   phoneNumber: String,
   email: String,
-  kind: PaymentKind,
-  onCircuitChange: (PaymentCircuit) -> Unit,
+  onCircuitChange: (PaymentEnvironment) -> Unit,
   onTokenChange: (String) -> Unit,
   onSumChange: (String) -> Unit,
   onCurrencyChange: (String) -> Unit,
   onPhoneNumberChange: (String) -> Unit,
   onEmailChange: (String) -> Unit,
-  onKindChange: (PaymentKind) -> Unit,
 ) {
   var circuitExpanded by remember { mutableStateOf(false) }
   var currencyExpanded by remember { mutableStateOf(false) }
-  var kindExpanded by remember { mutableStateOf(false) }
 
   Card(
     modifier = Modifier.widthIn(max = 500.dp),
@@ -324,9 +315,9 @@ class MainActivity : ComponentActivity() {
           expanded = circuitExpanded,
           onDismissRequest = { circuitExpanded = false }
         ) {
-          PaymentCircuit.entries.forEach { circuit ->
+          PaymentEnvironment.entries.forEach { circuit ->
             DropdownMenuItem(
-              enabled = circuit != PaymentCircuit.Production && circuit != PaymentCircuit.Development,
+              enabled = circuit != PaymentEnvironment.Production && circuit != PaymentEnvironment.Development,
               text = { Text(circuit.name) },
               onClick = {
                 onCircuitChange(circuit)
@@ -346,51 +337,6 @@ class MainActivity : ComponentActivity() {
         colors = OutlinedTextFieldDefaults.colors().copy(unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface),
         modifier = Modifier.fillMaxWidth()
       )
-
-      Spacer(modifier = Modifier.height(8.dp))
-
-      Box {
-        OutlinedTextField(
-          value = kind::class.java.simpleName,
-          onValueChange = { },
-          label = { Text("Kind") },
-          readOnly = true,
-          colors = OutlinedTextFieldDefaults.colors().copy(unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface),
-          trailingIcon = { Text(text = "▼", style = MaterialTheme.typography.bodyMedium) },
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(0.dp),
-        )
-        Box(
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .clickable { kindExpanded = true }
-        )
-        DropdownMenu(
-          expanded = kindExpanded,
-          onDismissRequest = { kindExpanded = false }
-        ) {
-          listOf(
-            PaymentKind.Book,
-            PaymentKind.Buy,
-            PaymentKind.Checkout,
-            PaymentKind.Donate,
-            PaymentKind.Order,
-            PaymentKind.Pay,
-            PaymentKind.Plain,
-            PaymentKind.Subscribe
-          ).forEach { kind ->
-            DropdownMenuItem(
-              text = { Text(kind::class.java.simpleName) },
-              onClick = {
-                onKindChange(kind)
-                kindExpanded = false
-              }
-            )
-          }
-        }
-      }
 
       Spacer(modifier = Modifier.height(8.dp))
 

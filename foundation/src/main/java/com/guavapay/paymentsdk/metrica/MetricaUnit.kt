@@ -38,7 +38,7 @@ import kotlinx.coroutines.CancellationException
 internal class MetricaUnit(private val lib: LibraryUnit) {
   private val options = SentryAndroidOptions().apply {
     dsn = "https://aa8917c4ee21e2da40b94e26f0db755b@o4507129772310528.ingest.de.sentry.io/4509802634215505"
-    environment = lib.state.payload?.circuit?.name
+    environment = lib.state.payload?.environment?.name
 
     tracesSampleRate = 0.10
     profilesSampleRate = 0.10
@@ -139,10 +139,10 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
     payload?.run {
       setContexts("order", mapOf("order_id" to orderId))
       locale?.let { setContexts("locale", mapOf("locale" to it)) }
-      circuit?.let { setContexts("circuit", mapOf("circuit" to it)) }
-      setContexts("schemes", mapOf("schemes" to schemes))
-      setContexts("methods", mapOf("methods" to methods))
-      setContexts("categories", mapOf("categories" to categories))
+      environment?.let { setContexts("circuit", mapOf("circuit" to it)) }
+      setContexts("schemes", mapOf("schemes" to availableCardSchemes))
+      setContexts("methods", mapOf("methods" to availablePaymentMethods))
+      setContexts("categories", mapOf("categories" to availableCardProductCategories))
     }
     lib.state.device.ip?.let { user = User().apply { ipAddress = it } }
   }

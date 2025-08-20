@@ -22,9 +22,9 @@ import com.guavapay.paymentsdk.gateway.banking.GatewayException.UnknownException
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme
 import com.guavapay.paymentsdk.gateway.banking.PaymentKind
-import com.guavapay.paymentsdk.gateway.banking.PaymentMethod.Card
+import com.guavapay.paymentsdk.gateway.banking.PaymentMethod.PaymentCard
 import com.guavapay.paymentsdk.gateway.banking.PaymentMethod.GooglePay
-import com.guavapay.paymentsdk.gateway.banking.PaymentMethod.SavedCard
+import com.guavapay.paymentsdk.gateway.banking.PaymentMethod.PaymentCardBinding
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Companion.toResult
 import com.guavapay.paymentsdk.gateway.vendors.googlepay.GPayResult
@@ -72,7 +72,6 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.Json
-import java.util.UUID
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
@@ -185,9 +184,9 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
   private val payload = lib.state.payload()
 
   private val instruments = Instruments() ; private inner class Instruments {
-    val card = payload.methods.filterIsInstance<Card>().firstOrNull()
-    val saved = payload.methods.filterIsInstance<SavedCard>().firstOrNull()
-    val gpay = payload.methods.filterIsInstance<GooglePay>().firstOrNull()
+    val card = payload.availablePaymentMethods.filterIsInstance<PaymentCard>().firstOrNull()
+    val saved = payload.availablePaymentMethods.filterIsInstance<PaymentCardBinding>().firstOrNull()
+    val gpay = payload.availablePaymentMethods.filterIsInstance<GooglePay>().firstOrNull()
   }
 
   var internal = Internal()
@@ -359,23 +358,23 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
 
     val amount = currencify(resp.order.totalAmount.baseUnits, resp.order.totalAmount.currency, payload.locale())
 
-    val sdkMethods = payload.methods.mapNotNull {
+    val sdkMethods = payload.availablePaymentMethods.mapNotNull {
       when (it) {
-        is Card -> TYPE_CARD
+        is PaymentCard -> TYPE_CARD
         is GooglePay -> TYPE_GPAY
-        is SavedCard -> TYPE_BINDING
+        is PaymentCardBinding -> TYPE_BINDING
         else -> null
       }
     }.toSet()
 
     val allowedMethods = resp.order.availablePaymentMethods.intersect(sdkMethods)
 
-    val sdkSchemes = payload.schemes.map { it.name }.toSet()
+    val sdkSchemes = payload.availableCardSchemes.map { it.name }.toSet()
     val allowedSchemes = resp.order.availableCardSchemes.intersectByName(sdkSchemes).toList().also {
       if (it.isEmpty()) return _effects.send(Effect.AbortError(NoAvailableCardSchemesException("No available card schemes")))
     }
 
-    val sdkCats = payload.categories.map { it.name }.toSet()
+    val sdkCats = payload.availableCardProductCategories.map { it.name }.toSet()
     val allowedCats = resp.order.availableCardProductCategories.intersectByName(sdkCats).also {
       if (it.isEmpty()) return _effects.send(Effect.AbortError(NoAvailableCardProductCategoriesException("No available card product categories")))
     }
