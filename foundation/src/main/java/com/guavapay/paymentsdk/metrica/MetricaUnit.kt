@@ -47,8 +47,8 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
     isEnableUserInteractionBreadcrumbs = true
     isAttachThreads = true
 
-    proguardUuid = "7FC967FA-07F0-48E6-A3B7-EE86703DB9E6"
-    addBundleId("7FC967FA-07F0-48E6-A3B7-EE86703DB9E6")
+    proguardUuid = "CCE0349D-B7A2-4A90-B688-87FEAA87F10D"
+    addBundleId("CCE0349D-B7A2-4A90-B688-87FEAA87F10D")
     release = "sdk@0.5.2"
     dist = "0.5.2.public.release"
 
