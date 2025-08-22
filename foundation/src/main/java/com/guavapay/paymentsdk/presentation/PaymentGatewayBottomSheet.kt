@@ -42,8 +42,6 @@ import kotlinx.coroutines.delay
       isOverlayLayoutVisible = false
     }
 
-    BackHandler(enabled = isWindowVisible) { close(PaymentResult.Cancel) }
-
     if (isWindowVisible) {
       Dialog(
         onDismissRequest = { close(PaymentResult.Cancel) },

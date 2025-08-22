@@ -15,7 +15,7 @@ android {
     minSdk = 21
     targetSdk = 35
     versionCode = 4
-    versionName = "1.8.0"
+    versionName = "1.8.1"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     base.archivesName.set("myguava-business-payment-sdk-android-v${android.defaultConfig.versionName}")

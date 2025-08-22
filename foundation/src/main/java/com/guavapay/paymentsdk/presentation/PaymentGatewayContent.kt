@@ -2,6 +2,7 @@
 
 package com.guavapay.paymentsdk.presentation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
@@ -70,6 +71,22 @@ import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
   val dialogs = rememberNavBackStack<Route>()
   val showDialog = dialogs.isNotEmpty()
 
+  fun cancel() {
+    if (dialogs.lastOrNull() is Route.AbortRoute) {
+      dialogs.removeLastOrNull()
+      dismiss(PaymentResult.Cancel)
+    } else if (dialogs.isNotEmpty()) {
+      dialogs.removeLastOrNull()
+    } else if (dialogs.isEmpty()) {
+      dialogs.add(Route.CancelRoute)
+    } else {
+      dialogs.removeLastOrNull()
+      dismiss(PaymentResult.Cancel)
+    }
+  }
+
+  BackHandler(onBack = ::cancel)
+
   Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
     AnimatedVisibility(
       visible = isOverlayLayoutVisible,
@@ -81,19 +98,7 @@ import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
           .fillMaxSize()
           .background(MaterialTheme.colorScheme.scrim)
           .pointerInput(Unit) {
-            detectTapGestures {
-              if (dialogs.lastOrNull() is Route.AbortRoute) {
-                dialogs.removeLastOrNull()
-                dismiss(PaymentResult.Cancel)
-              } else if (dialogs.isNotEmpty()) {
-                dialogs.removeLastOrNull()
-              } else if (dialogs.isEmpty()) {
-                dialogs.add(Route.CancelRoute)
-              } else {
-                dialogs.removeLastOrNull()
-                dismiss(PaymentResult.Cancel)
-              }
-            }
+            detectTapGestures { cancel() }
           }
       )
     }
