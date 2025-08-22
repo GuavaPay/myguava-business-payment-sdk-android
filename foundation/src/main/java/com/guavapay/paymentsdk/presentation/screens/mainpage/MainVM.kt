@@ -44,6 +44,7 @@ import com.guavapay.paymentsdk.network.services.OrderApi.Models.GetOrderResponse
 import com.guavapay.paymentsdk.platform.algorithm.luhn
 import com.guavapay.paymentsdk.platform.arrays.intersectByName
 import com.guavapay.paymentsdk.platform.coroutines.ExceptionHandler
+import com.guavapay.paymentsdk.platform.coroutines.onEachRecover
 import com.guavapay.paymentsdk.presentation.navigation.NavigationEvents
 import com.guavapay.paymentsdk.presentation.navigation.NavigationEvents.Companion.key
 import com.guavapay.paymentsdk.presentation.platform.FieldState
@@ -51,7 +52,6 @@ import com.guavapay.paymentsdk.presentation.platform.Text
 import com.guavapay.paymentsdk.presentation.platform.basy
 import com.guavapay.paymentsdk.presentation.platform.collectDebounced
 import com.guavapay.paymentsdk.presentation.platform.currencify
-import com.guavapay.paymentsdk.presentation.platform.retrow
 import com.guavapay.paymentsdk.presentation.screens.mainpage.threeds.ThreedsInterconnect
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -238,24 +238,12 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
       .filter { it.length in PAN_MIN..PAN_MAX }
       .debounce(PAN_DEBOUNCE_MS)
       .onEach { busyPan() }
-      .onEach(::onPanRange)
-      .onEach { unbusyPan() }
-      .catch {
-        unbusyPan()
-        if (it !is CancellationException) {
-          if (it is IntegrationException.ClientError) {
-            w("Card range client error code=${it.code}")
-            lib.metrica.breadcrumb("Pan-Error", "Sdk Validation", "error", data = mapOf("code" to it.code))
-            fieldError()
-          } else {
-            with(UnknownException(it)) {
-              lib.metrica.breadcrumb("Pan-Error", "Sdk Validation", "error", data = mapOf("error_type" to javaClass.simpleName, "error_msg" to (message ?: "")))
-              fatal(this)
-              throw UnknownException(this)
-            }
-          }
-        }
+      .onEachRecover {
+        recover { handleRecoveringPanError(it) }
+        onPanRange(original)
       }
+      .onEach { unbusyPan() }
+      .catch { handlePanError(it) }
       .launch()
 
     collectDebounced(
@@ -264,6 +252,32 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
       selector = { it.fields.ch },
       block = ::finalizeCh
     )
+  }
+
+  private suspend fun handleRecoveringPanError(it: Throwable) {
+    unbusyPan()
+    if (it !is CancellationException) {
+      if (it is IntegrationException.ClientError) {
+        w("Card range client error code=${it.code}")
+        lib.metrica.breadcrumb("Pan-Error", "Sdk Validation", "error", data = mapOf("code" to it.code))
+        fieldError()
+      } else {
+        with(UnknownException(it)) {
+          lib.metrica.breadcrumb("Pan-Error", "Sdk Validation", "error", data = mapOf("error_type" to javaClass.simpleName, "error_msg" to (message ?: "")))
+          fatal(this)
+          throw UnknownException(this)
+        }
+      }
+    }
+  }
+
+  private suspend fun handlePanError(it: Throwable) {
+    unbusyPan()
+    with(UnknownException(it)) {
+      lib.metrica.breadcrumb("Pan-Error", "Sdk Validation", "error", data = mapOf("error_type" to javaClass.simpleName, "error_msg" to (message ?: "")))
+      fatal(this)
+      throw UnknownException(this)
+    }
   }
 
   private inline fun update(block: (State) -> State) {
@@ -623,7 +637,7 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
       } catch (t: Exception) {
         lib.metrica.breadcrumb("Payment-Execute-Error", "Sdk Payment", "error", data = mapOf("error_type" to t.javaClass.simpleName, "error_msg" to (t.message ?: "")))
         unbusy()
-        retrow(t)
+        throw t
       }
     }
 
@@ -686,7 +700,7 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
       } catch (t: Exception) {
         lib.metrica.breadcrumb("Payment-Execute-Error", "Sdk Payment", "error", data = mapOf("method" to TYPE_GPAY, "error_type" to t.javaClass.simpleName, "error_msg" to (t.message ?: "")))
         unbusy()
-        retrow(t)
+        throw t
       }
     }
 
@@ -889,7 +903,7 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
         lib.metrica.breadcrumb("SavedCard-Delete-Initiated", "Sdk Payment", "action")
 
         runCatching { RemoteDeleteBinding(lib, id) }
-          .onFailure { if (it !is IntegrationException.NoResponseError) e("Delete binding failed: ${it.message}", it) else retrow(it) }
+          .onFailure { if (it !is IntegrationException.NoResponseError) e("Delete binding failed: ${it.message}", it) else throw it }
 
         val cards = loadSavedCards(internal.order!!, internal.allowedSchemes, internal.allowedCategories) ?: emptyList()
         val mode = if (cards.isEmpty()) State.Mode.NewCard else state.value.mode
@@ -920,7 +934,7 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
         lib.metrica.breadcrumb("SavedCard-Edit-Initiated", "Sdk Payment", "action")
 
         runCatching { RemoteEditBinding(lib, id, name) }
-          .onFailure { if (it !is IntegrationException.NoResponseError) e("Edit binding failed: ${it.message}", it) else retrow(it) }
+          .onFailure { if (it !is IntegrationException.NoResponseError) e("Edit binding failed: ${it.message}", it) else throw it }
 
         val cards = loadSavedCards(internal.order!!, internal.allowedSchemes, internal.allowedCategories) ?: emptyList()
         val mode = if (cards.isEmpty()) State.Mode.NewCard else state.value.mode

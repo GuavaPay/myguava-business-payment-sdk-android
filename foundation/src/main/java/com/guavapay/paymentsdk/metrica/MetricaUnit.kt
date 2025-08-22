@@ -151,6 +151,7 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
 
   private fun isSdkRelatedException(throwable: Throwable?): Boolean {
     if (throwable == null) return false
+    if (throwable is CancellationException) return false
     if (isDirectSdkException(throwable)) return true
     if (hasStackTraceInSdkPackages(throwable)) return true
 

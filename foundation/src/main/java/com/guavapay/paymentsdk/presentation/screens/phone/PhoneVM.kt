@@ -8,10 +8,8 @@ import com.guavapay.paymentsdk.LibraryUnit
 import com.guavapay.paymentsdk.integrations.local.Country
 import com.guavapay.paymentsdk.integrations.local.LocalCountries
 import com.guavapay.paymentsdk.presentation.navigation.NavigationEvents.Event
-import com.guavapay.paymentsdk.presentation.navigation.Route
-import com.guavapay.paymentsdk.presentation.navigation.Route.*
+import com.guavapay.paymentsdk.presentation.navigation.Route.PhoneRoute
 import com.guavapay.paymentsdk.presentation.platform.basy
-import com.guavapay.paymentsdk.presentation.platform.retrow
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
@@ -84,7 +82,7 @@ internal class PhoneVM(private val lib: LibraryUnit, private val handle: SavedSt
       } catch (e: Exception) {
         countries.update { emptyList() }
         lib.metrica.breadcrumb("Phone-Load-Error", "Sdk UI", "error", data = mapOf("error" to (e.message ?: "")))
-        retrow(e)
+        throw e
       } finally {
         loading.update { false }
       }

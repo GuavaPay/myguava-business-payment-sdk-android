@@ -81,7 +81,7 @@ dependencyResolutionManagement {
       name = "GuavaPay Maven Repository"
 
       content {
-        includeGroupAndSubgroups("com.guavapay")
+        includeGroupAndSubgroups("com.guavapay.myguava.business")
       }
     }
   }
@@ -94,7 +94,7 @@ Next, add the Payment SDK dependency to your module's `build.gradle.kts` file:
 
 ```kotlin
 dependencies {
-  implementation("com.guavapay.myguava.business:payment-sdk-android:0.5.2")
+  implementation("com.guavapay.myguava.business:payment-sdk-android:0.6.0")
 }
 ```
 
@@ -184,7 +184,7 @@ You can select the environment in two ways:
     val payload = PaymentGatewayPayload(
         orderId = order.id,
         sessionToken = order.sessionToken,
-        circuit = PaymentCircuit.Sandbox
+        environment = PaymentEnvironment.Sandbox
     )
     ```
 
