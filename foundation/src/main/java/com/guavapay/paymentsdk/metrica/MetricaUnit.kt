@@ -49,8 +49,8 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
 
     proguardUuid = "CCE0349D-B7A2-4A90-B688-87FEAA87F10D"
     addBundleId("CCE0349D-B7A2-4A90-B688-87FEAA87F10D")
-    release = "sdk@0.5.2"
-    dist = "0.5.2.public.release"
+    release = "sdk@0.6.0"
+    dist = "0.6.0.public.release"
 
     isCollectAdditionalContext = true
     isAnrEnabled = true
@@ -101,13 +101,17 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
   private val scopes = Scopes(defaultScope, isolationScope, globalScope, "MetricaUnit::init")
 
   fun exception(throwable: Throwable) {
+    scopes.options.environment = lib.state.payload?.environment?.name?.lowercase()
+    scopes.fillContexts()
     scopes.withScope { scope ->
-      scope.fillContexts()
       scopes.captureException(throwable)
     }
   }
 
   fun breadcrumb(message: String, category: String = "unspecified", type: String = "unspecified", level: SentryLevel = SentryLevel.INFO, data: Map<String, Any?> = emptyMap()) {
+    scopes.options.environment = lib.state.payload?.environment?.name?.lowercase()
+    scopes.fillContexts()
+
     scopes.addBreadcrumb(
       Breadcrumb().apply {
         this.message = message
@@ -126,25 +130,27 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
     extras: Map<String, String> = emptyMap(),
     contexts: Map<String, Any> = emptyMap()
   ) {
+    scopes.options.environment = lib.state.payload?.environment?.name?.lowercase()
+    scopes.fillContexts()
+
     scopes.captureMessage(message, level) { scope ->
-      scope.fillContexts()
       tags.forEach { (k, v) -> scope.setTag(k, v) }
       extras.forEach { (k, v) -> scope.setExtra(k, v) }
       contexts.forEach { (k, v) -> scope.setContexts(k, v) }
     }
   }
 
-  private fun IScope.fillContexts() {
+  private fun Scopes.fillContexts() {
     val payload = lib.state.payload
     payload?.run {
-      setContexts("order", mapOf("order_id" to orderId))
-      locale?.let { setContexts("locale", mapOf("locale" to it)) }
-      environment?.let { setContexts("circuit", mapOf("circuit" to it)) }
-      setContexts("schemes", mapOf("schemes" to availableCardSchemes))
-      setContexts("methods", mapOf("methods" to availablePaymentMethods))
-      setContexts("categories", mapOf("categories" to availableCardProductCategories))
+      setExtra("order", orderId)
+      locale?.let { setExtra("locale", it.toString()) }
+      environment?.let { setExtra("environment", it.name.lowercase()) }
+      setExtra("schemes", availableCardSchemes.joinToString(","))
+      setExtra("methods", availablePaymentMethods.joinToString(","))
+      setExtra("categories", availableCardProductCategories.joinToString(","))
     }
-    lib.state.device.ip?.let { user = User().apply { ipAddress = it } }
+    lib.state.device.ip?.let { setUser(User().apply { ipAddress = it }) }
   }
 
   fun close() = scopes.close()

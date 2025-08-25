@@ -57,13 +57,14 @@ internal class NetworkUnit(private val lib: LibraryUnit) {
 
   val clients = Clients(); inner class Clients() {
     val apikey get() = lib.state.payload().sessionToken
+    val requid: ThreadLocal<String> = ThreadLocal.withInitial { "--- --- ---" }
 
     val interceptors = Interceptors(); inner class Interceptors() {
       fun authentication() = Interceptor { chain ->
         val original = chain.request()
         val request = original.newBuilder()
           .header("Authorization", "Bearer ${clients.apikey}")
-          .header("Request-ID", UUID.randomUUID().toString())
+          .header("Request-ID", UUID.randomUUID().toString().also(requid::set))
 
         chain.proceed(request.build())
       }
