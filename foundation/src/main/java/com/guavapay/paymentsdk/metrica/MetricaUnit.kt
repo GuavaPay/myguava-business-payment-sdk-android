@@ -223,21 +223,21 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
   class PayloadEventProcessor(private val lib: LibraryUnit) : EventProcessor {
     override fun process(event: SentryEvent, hint: Hint): SentryEvent {
       val p = lib.state.payload ?: return event
-      event.setExtra("order", p.orderId)
-      p.locale?.let { event.setExtra("locale", it.toString()) }
-      event.contexts["payment"] = mapOf(
-        "schemes" to p.availableCardSchemes,
-        "methods" to p.availablePaymentMethods,
-        "categories" to p.availableCardProductCategories,
-        "method" to lib.state.analytics.paymentMethod
+      event.setExtra("Order ID", p.orderId)
+      p.locale?.let { event.setExtra("Locale", it.toString()) }
+      event.contexts["Payment Details"] = mapOf(
+        "Card Schemes" to p.availableCardSchemes,
+        "Payment Methods" to p.availablePaymentMethods,
+        "Card Product Categories" to p.availableCardProductCategories,
+        "Payment Method" to lib.state.analytics.paymentMethod
       )
 
-      event.contexts["request"] = mapOf("id" to lib.state.analytics.requestId)
-      event.setExtra("schemes", p.availableCardSchemes.joinToString(","))
-      event.setExtra("methods", p.availablePaymentMethods.joinToString(","))
-      event.setExtra("categories", p.availableCardProductCategories.joinToString(","))
-      event.setExtra("method", lib.state.analytics.paymentMethod)
-      event.setExtra("requestId", lib.state.analytics.requestId)
+      event.contexts["Request"] = mapOf("ID" to lib.state.analytics.requestId)
+      event.setExtra("Card Schemes", p.availableCardSchemes.joinToString(","))
+      event.setExtra("Payment Methods", p.availablePaymentMethods.joinToString(","))
+      event.setExtra("Card Product Categories", p.availableCardProductCategories.joinToString(","))
+      event.setExtra("Payment Method", lib.state.analytics.paymentMethod)
+      event.setExtra("Request ID", lib.state.analytics.requestId)
 
       p.environment?.name?.lowercase()?.let { event.environment = it }
       lib.state.device.ip?.let { ip ->
