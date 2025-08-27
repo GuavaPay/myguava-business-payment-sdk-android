@@ -13,11 +13,12 @@ import com.guavapay.paymentsdk.logging.i
 import com.guavapay.paymentsdk.network.ssevents.SseException
 import io.sentry.Breadcrumb
 import io.sentry.EventProcessor
-import io.sentry.IScope
+import io.sentry.Hint
 import io.sentry.MainEventProcessor
 import io.sentry.Scope
 import io.sentry.Scopes
 import io.sentry.SentryClient
+import io.sentry.SentryEvent
 import io.sentry.SentryLevel
 import io.sentry.UncaughtExceptionHandlerIntegration
 import io.sentry.android.core.ActivityBreadcrumbsIntegration
@@ -64,6 +65,11 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
     addIgnoredExceptionForType(CancellationException::class.java)
 
     setBeforeSend { event, _ ->
+      if (event.throwable == null) {
+        i("Non-exception event captured")
+        return@setBeforeSend event
+      }
+
       if (isSdkRelatedException(event.throwable)) {
         i("SDK related exception captured")
         return@setBeforeSend event
@@ -78,6 +84,7 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
     createDefaultAndroidEventProcessor(lib.context, this)?.let(::addEventProcessor)
     createSentryRuntimeEventProcessor()?.let(::addEventProcessor)
     createPerformanceAndroidEventProcessor(this)?.let(::addEventProcessor)
+    addEventProcessor(PayloadEventProcessor(lib))
 
     integrations.add(UncaughtExceptionHandlerIntegration())
     integrations.add(AnrIntegrationFactory.create(lib.context, bip))
@@ -102,15 +109,13 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
 
   fun exception(throwable: Throwable) {
     scopes.options.environment = lib.state.payload?.environment?.name?.lowercase()
-    scopes.fillContexts()
-    scopes.withScope { scope ->
+    scopes.withScope {
       scopes.captureException(throwable)
     }
   }
 
   fun breadcrumb(message: String, category: String = "unspecified", type: String = "unspecified", level: SentryLevel = SentryLevel.INFO, data: Map<String, Any?> = emptyMap()) {
     scopes.options.environment = lib.state.payload?.environment?.name?.lowercase()
-    scopes.fillContexts()
 
     scopes.addBreadcrumb(
       Breadcrumb().apply {
@@ -131,26 +136,12 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
     contexts: Map<String, Any> = emptyMap()
   ) {
     scopes.options.environment = lib.state.payload?.environment?.name?.lowercase()
-    scopes.fillContexts()
 
     scopes.captureMessage(message, level) { scope ->
       tags.forEach { (k, v) -> scope.setTag(k, v) }
       extras.forEach { (k, v) -> scope.setExtra(k, v) }
       contexts.forEach { (k, v) -> scope.setContexts(k, v) }
     }
-  }
-
-  private fun Scopes.fillContexts() {
-    val payload = lib.state.payload
-    payload?.run {
-      setExtra("order", orderId)
-      locale?.let { setExtra("locale", it.toString()) }
-      environment?.let { setExtra("environment", it.name.lowercase()) }
-      setExtra("schemes", availableCardSchemes.joinToString(","))
-      setExtra("methods", availablePaymentMethods.joinToString(","))
-      setExtra("categories", availableCardProductCategories.joinToString(","))
-    }
-    lib.state.device.ip?.let { setUser(User().apply { ipAddress = it }) }
   }
 
   fun close() = scopes.close()
@@ -186,7 +177,7 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
   private fun hasStackTraceInSdkPackages(throwable: Throwable) =
     throwable.stackTrace.any { stackTraceElement ->
       val className = stackTraceElement.className
-      className.startsWith("com.guavapay.paymentsdk.") || className.startsWith("com.guavapay.myguava.business.myguava3ds2.")
+      className.startsWith("com.guavapay.paymentsdk.") || className.startsWith("com.guavapay.myguava.business.myguava3ds2.") || className.startsWith("kotlinx.coroutines.TimeoutKt")
     }
 
   private fun createDefaultAndroidEventProcessor(context: Context, options: SentryAndroidOptions) = try {
@@ -227,5 +218,34 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
   } catch (e: Exception) {
     e("Failed to create PerformanceAndroidEventProcessor via reflection", e)
     null
+  }
+
+  class PayloadEventProcessor(private val lib: LibraryUnit) : EventProcessor {
+    override fun process(event: SentryEvent, hint: Hint): SentryEvent {
+      val p = lib.state.payload ?: return event
+      event.setExtra("order", p.orderId)
+      p.locale?.let { event.setExtra("locale", it.toString()) }
+      event.contexts["payment"] = mapOf(
+        "schemes" to p.availableCardSchemes,
+        "methods" to p.availablePaymentMethods,
+        "categories" to p.availableCardProductCategories,
+        "method" to lib.state.analytics.paymentMethod
+      )
+
+      event.contexts["request"] = mapOf("id" to lib.state.analytics.requestId)
+      event.setExtra("schemes", p.availableCardSchemes.joinToString(","))
+      event.setExtra("methods", p.availablePaymentMethods.joinToString(","))
+      event.setExtra("categories", p.availableCardProductCategories.joinToString(","))
+      event.setExtra("method", lib.state.analytics.paymentMethod)
+      event.setExtra("requestId", lib.state.analytics.requestId)
+
+      p.environment?.name?.lowercase()?.let { event.environment = it }
+      lib.state.device.ip?.let { ip ->
+        val u = event.user ?: User()
+        u.ipAddress = ip
+        event.user = u
+      }
+      return event
+    }
   }
 }

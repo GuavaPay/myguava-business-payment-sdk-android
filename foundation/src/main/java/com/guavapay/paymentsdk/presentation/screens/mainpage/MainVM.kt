@@ -22,8 +22,8 @@ import com.guavapay.paymentsdk.gateway.banking.GatewayException.UnknownException
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardCategory
 import com.guavapay.paymentsdk.gateway.banking.PaymentCardScheme
 import com.guavapay.paymentsdk.gateway.banking.PaymentKind
-import com.guavapay.paymentsdk.gateway.banking.PaymentMethod.PaymentCard
 import com.guavapay.paymentsdk.gateway.banking.PaymentMethod.GooglePay
+import com.guavapay.paymentsdk.gateway.banking.PaymentMethod.PaymentCard
 import com.guavapay.paymentsdk.gateway.banking.PaymentMethod.PaymentCardBinding
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult
 import com.guavapay.paymentsdk.gateway.banking.PaymentResult.Companion.toResult
@@ -610,6 +610,8 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
       try {
         busy()
 
+        lib.state.analytics = lib.state.analytics.copy(paymentMethod = paymentMethod.type)
+
         lib.metrica.breadcrumb("Payment-Execute-Initiated", "Sdk Payment", "action", data = mapOf("method" to paymentMethod.type, "create_binding" to bindingCreationIsNeeded))
 
         val order = internal.order ?: throw UnknownException(IllegalStateException("Order data not available"))
@@ -667,6 +669,8 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
     ) {
       try {
         busy()
+
+        lib.state.analytics = lib.state.analytics.copy(paymentMethod = "GOOGLE_PAY")
 
         lib.metrica.breadcrumb("Payment-Execute-Initiated", "Sdk Payment", "action", data = mapOf("method" to TYPE_GPAY, "create_binding" to bindingCreationIsNeeded))
 

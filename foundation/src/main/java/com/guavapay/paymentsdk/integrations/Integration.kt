@@ -26,7 +26,7 @@ internal suspend inline fun <reified T> RunIntegration(lib: LibraryUnit, timeout
       timeoutMs = timeoutMs,
       factory = { cause ->
         e("Integration operation for gathering ${T::class.simpleName} timed out", cause)
-        TimeoutError("request timed out", lib.network.clients.requid.get(), cause)
+        TimeoutError("request timed out", cause)
       }
     ) {
       retry(3) {
@@ -49,7 +49,7 @@ internal suspend inline fun <reified T> RunLocalIntegration(lib: LibraryUnit, ti
       timeoutMs = timeoutMs,
       factory = { cause ->
         e("Local integration operation for gathering ${T::class.simpleName} timed out", cause)
-        TimeoutError("local operation timed out", lib.network.clients.requid.get(), cause)
+        TimeoutError("local operation timed out", cause)
       }
     ) {
       runCatching {
@@ -65,21 +65,21 @@ internal suspend inline fun <reified T> RunLocalIntegration(lib: LibraryUnit, ti
 
 internal sealed class IntegrationException(message: String, cause: Throwable? = null) : Exception(message, cause) {
   class NoResponseError : IntegrationException("No response from server (204)") { private fun readResolve(): Any = NoResponseError() }
-  class TimeoutError(message: String, reqId: String, cause: Throwable? = null) : IntegrationException(message, cause)
-  class ClientError(override val message: String, val code: Int, reqId: String, cause: Throwable? = null) : IntegrationException(message, cause)
-  class ServerError(override val message: String, val code: Int, reqId: String, cause: Throwable? = null) : IntegrationException(message, cause)
-  class UnqualifiedError(message: String, reqId: String, cause: Throwable? = null) : IntegrationException(message, cause)
+  class TimeoutError(message: String, cause: Throwable? = null) : IntegrationException(message, cause)
+  class ClientError(override val message: String, val code: Int, cause: Throwable? = null) : IntegrationException(message, cause)
+  class ServerError(override val message: String, val code: Int, cause: Throwable? = null) : IntegrationException(message, cause)
+  class UnqualifiedError(message: String, cause: Throwable? = null) : IntegrationException(message, cause)
 }
 
 private inline fun <reified T> map(lib: LibraryUnit, response: Response<T>) = when {
   response.isSuccessful -> response.body() ?: when {
     response.code() == 204 -> throw NoResponseError()
     T::class == Unit::class -> Unit as T
-    else -> throw UnqualifiedError("no response when expected", lib.network.clients.requid.get())
+    else -> throw UnqualifiedError("no response when expected")
   }
-  response.code() in 400..499 -> throw ClientError(message = response.message().ifBlank { "Client error" }, code = response.code(), lib.network.clients.requid.get())
-  response.code() in 500..599 -> throw ServerError(message = response.message().ifBlank { "Server error" }, code = response.code(), lib.network.clients.requid.get())
-  else -> throw UnqualifiedError("returned unexpected HTTP ${response.code()}: ${response.message()}", lib.network.clients.requid.get(), )
+  response.code() in 400..499 -> throw ClientError(message = response.message().ifBlank { "Client error" }, code = response.code())
+  response.code() in 500..599 -> throw ServerError(message = response.message().ifBlank { "Server error" }, code = response.code())
+  else -> throw UnqualifiedError("returned unexpected HTTP ${response.code()}: ${response.message()}")
 }
 
 private suspend inline fun <reified T> retry(attempts: Int, crossinline operation: suspend (attempt: Int) -> T): T {
