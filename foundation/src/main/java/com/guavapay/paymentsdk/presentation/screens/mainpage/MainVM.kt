@@ -219,12 +219,10 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
       }
       .catch {
         unbusy()
-        if (it !is CancellationException) {
-          with(UnknownException(it)) {
-            lib.metrica.breadcrumb("Fetch-Error", "Sdk Order", "error", data = mapOf("error_type" to javaClass.simpleName, "error_msg" to (message ?: "")))
-            fatal(this)
-            throw UnknownException(this)
-          }
+        with(UnknownException(it)) {
+          lib.metrica.breadcrumb("Fetch-Error", "Sdk Order", "error", data = mapOf("error_type" to javaClass.simpleName, "error_msg" to (message ?: "")))
+          fatal(this)
+          throw UnknownException(this)
         }
       }
       .launch()
@@ -350,7 +348,6 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
       updateExternal { it.copy(saved = it.saved?.copy(isLoadingCards = false)) }
       ui
     } catch (t: Exception) {
-      e("Failed to load saved cards: ${t.message}", t)
       updateExternal { it.copy(saved = it.saved?.copy(isLoadingCards = false)) }
       null
     }
