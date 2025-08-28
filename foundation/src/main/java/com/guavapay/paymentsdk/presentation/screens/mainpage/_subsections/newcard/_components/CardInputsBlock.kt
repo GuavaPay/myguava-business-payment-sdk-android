@@ -59,6 +59,7 @@ internal object CardInputsBlock {
         error = state.fields.expError?.string(),
         singleLine = true,
         maxLength = 4,
+        ignorable = "/",
         visualTransformation = ExpiryDateVisualTransformation(),
       )
 

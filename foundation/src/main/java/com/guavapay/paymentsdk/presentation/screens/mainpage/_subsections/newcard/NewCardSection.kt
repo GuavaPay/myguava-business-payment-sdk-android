@@ -80,6 +80,7 @@ internal object NewCardSection {
         error = state.fields.panError?.string(),
         singleLine = true,
         maxLength = 19,
+        ignorable = " ",
         visualTransformation = CardNumberVisualTransformation(),
       )
 

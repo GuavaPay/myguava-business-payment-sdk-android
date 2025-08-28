@@ -61,6 +61,7 @@ private enum class TextFieldEndContent { Progress, Icon, Empty }
   error: String? = null,
   singleLine: Boolean = false,
   maxLength: Int? = null,
+  ignorable: String = "",
   visualTransformation: VisualTransformation = VisualTransformation.None,
   keyboardOptions: KeyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
   keyboardActions: KeyboardActions? = null,
@@ -123,7 +124,7 @@ private enum class TextFieldEndContent { Progress, Icon, Empty }
     OutlinedTextField(
       value = value,
       onValueChange = { newValue ->
-        val filtered = maxLength?.let { newValue.take(it) } ?: newValue
+        val filtered = maxLength?.let { newValue.filterNot { it in ignorable }.take(it) } ?: newValue
         onValueChange(filtered)
       },
       modifier = baseModifier
