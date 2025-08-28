@@ -41,8 +41,8 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
     dsn = "https://aa8917c4ee21e2da40b94e26f0db755b@o4507129772310528.ingest.de.sentry.io/4509802634215505"
     environment = lib.state.payload?.environment?.name
 
-    tracesSampleRate = 0.10
-    profilesSampleRate = 0.10
+    tracesSampleRate = 1.0
+    profilesSampleRate = 0.5
 
     isEnableUserInteractionTracing = true
     isEnableUserInteractionBreadcrumbs = true
@@ -60,11 +60,13 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
     isEnableAppStartProfiling = true
 
     isEnableUncaughtExceptionHandler = true
-    flushTimeoutMillis = 2000
+    flushTimeoutMillis = 1000
 
     addIgnoredExceptionForType(CancellationException::class.java)
 
     setBeforeSend { event, _ ->
+      i("Sending event to Sentry: ${event.eventId}")
+
       if (event.throwable == null) {
         i("Non-exception event captured")
         return@setBeforeSend event
@@ -76,6 +78,10 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
       }
       return@setBeforeSend null
     }
+
+    val logger = SentryLogger()
+
+    setLogger(logger)
 
     val lc = LoadClass()
     val bip = BuildInfoProvider(SentryLogger())
