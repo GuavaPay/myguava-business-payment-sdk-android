@@ -12,8 +12,11 @@ import com.guavapay.paymentsdk.logging.d
 import com.guavapay.paymentsdk.logging.e
 import com.guavapay.paymentsdk.logging.w
 import com.guavapay.paymentsdk.platform.coroutines.timeouting
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import retrofit2.Response
+import java.util.UUID
+import kotlin.coroutines.coroutineContext
 
 internal suspend inline fun <reified T> RunLocalIntegration(lib: LibraryUnit, crossinline op: suspend () -> T): T = RunLocalIntegration(lib, 4000, op)
 internal suspend inline fun <reified T> RunIntegration(lib: LibraryUnit, crossinline op: suspend () -> Response<T>): T = RunIntegration(lib, 30_000, op)
@@ -29,12 +32,11 @@ internal suspend inline fun <reified T> RunIntegration(lib: LibraryUnit, timeout
         TimeoutError("request timed out", cause)
       }
     ) {
-      retry(3) {
+      retry(lib, 3) { attempt ->
         runCatching {
           map(lib,op())
         }.onFailure {
           lib.coroutine.handlers.logcat.handler(coroutineContext, it)
-          lib.coroutine.handlers.metrica.handler(coroutineContext, it)
         }.getOrThrow()
       }
     }
@@ -82,7 +84,7 @@ private inline fun <reified T> map(lib: LibraryUnit, response: Response<T>) = wh
   else -> throw UnqualifiedError("returned unexpected HTTP ${response.code()}: ${response.message()}")
 }
 
-private suspend inline fun <reified T> retry(attempts: Int, crossinline operation: suspend (attempt: Int) -> T): T {
+private suspend inline fun <reified T> retry(lib: LibraryUnit, attempts: Int, crossinline operation: suspend (attempt: Int) -> T): T {
   var record: Throwable? = null
 
   repeat(attempts) { attempt ->
@@ -93,9 +95,10 @@ private suspend inline fun <reified T> retry(attempts: Int, crossinline operatio
 
       if (attempt == attempts - 1 || e !is ServerError) {
         e("An error occurred while executing the integration operation for gathering ${T::class.simpleName}", e)
+        lib.coroutine.handlers.metrica.handler(currentCoroutineContext(), e)
         throw e
       } else {
-        w("An server error occurred while executing the integration operation for gathering ${T::class.simpleName} (attempt: $attempt), retrying...")
+        w("An server error occurred while executing the integration operation for gathering ${T::class.simpleName} (attempt: ${attempt + 1}), retrying...")
       }
     }
   }
