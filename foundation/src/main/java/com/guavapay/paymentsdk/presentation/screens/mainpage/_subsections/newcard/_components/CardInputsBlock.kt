@@ -6,9 +6,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.PreviewLightDark
@@ -57,10 +60,15 @@ internal object CardInputsBlock {
         header = stringResource(R.string.initial_newcard_expiration),
         placeholder = stringResource(R.string.initial_newcard_expiration_placeholder),
         error = state.fields.expError?.string(),
+        keyboardOptions = KeyboardOptions(
+          keyboardType = KeyboardType.Text,
+          imeAction = ime
+        ),
         singleLine = true,
         maxLength = 4,
         ignorable = "/",
         visualTransformation = ExpiryDateVisualTransformation(),
+        fieldModifier = Modifier.semantics { contentType = ContentType.CreditCardExpirationDate }
       )
 
       val transform = rememberCvcPeekState(maxLength = maxCvc)
@@ -84,6 +92,7 @@ internal object CardInputsBlock {
         maxLength = maxCvc,
         visualTransformation = transform.visualTransformation(),
         onDoneAction = { transform.onFocusLost() ; actions.onDone?.invoke() },
+        fieldModifier = Modifier.semantics { contentType = ContentType.CreditCardSecurityCode }
       )
     }
   }
