@@ -13,6 +13,7 @@ internal class LibraryState(
 
   data class PaymentAnalyticsState(
     val requestId: String? = null,
+    val merchantName: String? = null,
     val paymentMethod: String? = null,
   )
 }

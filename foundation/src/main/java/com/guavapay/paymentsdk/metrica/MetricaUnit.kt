@@ -235,7 +235,8 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
         "Card Schemes" to p.availableCardSchemes,
         "Payment Methods" to p.availablePaymentMethods,
         "Card Product Categories" to p.availableCardProductCategories,
-        "Payment Method" to lib.state.analytics.paymentMethod
+        "Payment Method" to lib.state.analytics.paymentMethod,
+        "Merchant Name" to lib.state.analytics.merchantName,
       )
 
       event.contexts["Request"] = mapOf("ID" to lib.state.analytics.requestId)
@@ -243,6 +244,7 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
       event.setExtra("Payment Methods", p.availablePaymentMethods.joinToString(","))
       event.setExtra("Card Product Categories", p.availableCardProductCategories.joinToString(","))
       event.setExtra("Payment Method", lib.state.analytics.paymentMethod)
+      event.setExtra("Merchant Name", lib.state.analytics.merchantName)
       event.setExtra("Request ID", lib.state.analytics.requestId)
 
       p.environment?.name?.lowercase()?.let { event.environment = it }

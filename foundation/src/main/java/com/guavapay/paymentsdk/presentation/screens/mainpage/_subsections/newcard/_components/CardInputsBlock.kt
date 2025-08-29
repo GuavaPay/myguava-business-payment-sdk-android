@@ -61,7 +61,7 @@ internal object CardInputsBlock {
         placeholder = stringResource(R.string.initial_newcard_expiration_placeholder),
         error = state.fields.expError?.string(),
         keyboardOptions = KeyboardOptions(
-          keyboardType = KeyboardType.Text,
+          keyboardType = KeyboardType.Number,
           imeAction = ime
         ),
         singleLine = true,

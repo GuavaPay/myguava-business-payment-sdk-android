@@ -367,6 +367,8 @@ internal class MainVM(private val lib: LibraryUnit, private val handle: SavedSta
       else -> return _effects.send(Effect.Finish(PaymentResult.Error(IllegalStateException("Unprocessable order status: ${resp.order.status}"))))
     }
 
+    lib.state.analytics = lib.state.analytics.copy(merchantName = resp.merchant?.name)
+
     val amount = currencify(resp.order.totalAmount.baseUnits, resp.order.totalAmount.currency, payload.locale())
 
     val sdkMethods = payload.availablePaymentMethods.mapNotNull {
