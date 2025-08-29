@@ -2,10 +2,10 @@
 agp = "8.11.0"
 kotlin = "2.1.21"
 
-androidx-core = "1.16.0"
-androidx-lifecycle = "2.9.0"
+androidx-core = "1.17.0"
+androidx-lifecycle = "2.9.3"
 androidx-activity = "1.10.1"
-androidx-appcompat = "1.7.0"
+androidx-appcompat = "1.7.1"
 androidx-startup = "1.2.0"
 androidx-espesso-core = "3.6.1"
 androidx-junit = "1.2.1"
@@ -14,7 +14,7 @@ threeds2-sdk-android = "0.0.1"
 nav3Core = "1.0.0-alpha01"
 lifecycleViewmodelNav3 = "1.0.0-alpha01"
 
-compose-bom = "2025.05.01"
+compose-bom = "2025.08.01"
 
 okhttp = "4.12.0"
 retrofit = "3.0.0"
@@ -27,11 +27,10 @@ play-services-wallet = "19.4.0"
 play-services-wallet-compose = "1.1.0"
 
 sentry = "8.18.0"
-sentry-gradle-plugin = "5.8.1"
 
 junit = "4.13.2"
-material = "1.12.0"
-material3-android = "1.3.2"
+material = "1.14.0-alpha03"
+material3-android = "1.4.0-beta03"
 activity-ktx = "1.10.1"
 uiTooling = "1.8.3"
 desugarJdkLibs = "2.1.5"
@@ -93,4 +92,3 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
 android-library = { id = "com.android.library", version.ref = "agp" }
-sentry-android-gradle = { id = "io.sentry.android.gradle", version.ref = "sentry-gradle-plugin" }
