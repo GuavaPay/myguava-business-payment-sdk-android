@@ -55,13 +55,13 @@ The SDK relies on modern Android libraries to provide a robust and seamless expe
 
 | Dependency                      | Version          |
 |---------------------------------|------------------|
-| **Jetpack Compose**             | `BOM 2025.05.01` |
+| **Jetpack Compose**             | `BOM 2025.08.01` |
 | **OkHttp**                      | `4.12.0`         |
 | **Retrofit**                    | `3.0.0`          |
 | **Kotlinx Serialization**       | `1.8.1`          |
 | **Google Play Services Wallet** | `19.4.0`         |
-| **AndroidX Core**               | `1.16.0`         |
-| **AndroidX Lifecycle**          | `2.9.0`          |
+| **AndroidX Core**               | `1.17.0`         |
+| **AndroidX Lifecycle**          | `2.9.3`          |
 
 **Approximate SDK Size:** The core library adds approximately **~1.2 MB** to your app's download size.
 
