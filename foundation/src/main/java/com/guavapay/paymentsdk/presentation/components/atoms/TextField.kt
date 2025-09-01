@@ -17,6 +17,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,6 +43,7 @@ import com.guavapay.paymentsdk.presentation.components.atoms.TextFieldEndContent
 import com.guavapay.paymentsdk.presentation.platform.LocalSizesProvider
 import com.guavapay.paymentsdk.presentation.platform.LocalTokensProvider
 import com.guavapay.paymentsdk.presentation.platform.PreviewTheme
+import java.lang.System.currentTimeMillis
 
 private enum class TextFieldEndContent { Progress, Icon, Empty }
 
@@ -121,11 +123,13 @@ private enum class TextFieldEndContent { Progress, Icon, Empty }
       Spacer(modifier = Modifier.height(4.dp))
     }
 
+    val safeOnValueChange = rememberSafeOnValueChange(onValueChange)
+
     OutlinedTextField(
       value = value,
       onValueChange = { newValue ->
         val filtered = maxLength?.let { newValue.filterNot { it in ignorable }.take(it) } ?: newValue
-        onValueChange(filtered)
+        safeOnValueChange(filtered)
       },
       modifier = baseModifier
         .height(sizes.textfield().height)
@@ -192,5 +196,25 @@ private class TextFieldCasesProvider : PreviewParameterProvider<TextFieldDesc> {
       modifier = Modifier,
       fieldModifier = Modifier
     )
+  }
+}
+
+// Прости господи за такой костыль, у меня нет бесконечности времени
+// чтобы разобраться в причинах появления "мусорных" вызовов onValueChange
+// в определённых (пока невыясненных) условиях на некоторых устройствах.
+// Этот хук позволяет игнорировать "мусорные" вызовы, если они
+// происходят слишком часто (например, подряд идут два вызова (один нормальный), второй с пустым значением).
+// 30 миллисекунд выявлены имперически, как достаточный минимум для нормального ввода.
+
+// Предположительно бага в композе а именно в CoreTextField из-за принудительной рекомпозиции при использовании IME действий
+// (/androidx.compose.foundation/foundation-android/1.9.0-alpha03/f5d286ef2542c082b6f04db2944adc57247c7e71/foundation-android-1.9.0-alpha03-sources.jar!/commonMain/androidx/compose/foundation/text/CoreTextField.kt:254)
+@Composable fun rememberSafeOnValueChange(onValueChange: (String) -> Unit, minIntervalMs: Long = 30L): (String) -> Unit {
+  var lastTime by remember { mutableLongStateOf(0L) }
+
+  return x@ { newValue ->
+    val now = currentTimeMillis()
+    if (newValue.isEmpty() && now - lastTime <= minIntervalMs) return@x
+    lastTime = now
+    onValueChange(newValue)
   }
 }
