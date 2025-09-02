@@ -11,12 +11,11 @@ import com.guavapay.paymentsdk.integrations.IntegrationException.UnqualifiedErro
 import com.guavapay.paymentsdk.logging.d
 import com.guavapay.paymentsdk.logging.e
 import com.guavapay.paymentsdk.logging.w
+import com.guavapay.paymentsdk.network.http.httpFullDescriptor
 import com.guavapay.paymentsdk.platform.coroutines.timeouting
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import retrofit2.Response
-import java.util.UUID
-import kotlin.coroutines.coroutineContext
 
 internal suspend inline fun <reified T> RunLocalIntegration(lib: LibraryUnit, crossinline op: suspend () -> T): T = RunLocalIntegration(lib, 4000, op)
 internal suspend inline fun <reified T> RunIntegration(lib: LibraryUnit, crossinline op: suspend () -> Response<T>): T = RunIntegration(lib, 30_000, op)
@@ -66,22 +65,24 @@ internal suspend inline fun <reified T> RunLocalIntegration(lib: LibraryUnit, ti
 }
 
 internal sealed class IntegrationException(message: String, cause: Throwable? = null) : Exception(message, cause) {
-  class NoResponseError : IntegrationException("No response from server (204)") { private fun readResolve(): Any = NoResponseError() }
+  class NoResponseError : IntegrationException("HTTP 204 No Content") { private fun readResolve(): Any = NoResponseError() }
   class TimeoutError(message: String, cause: Throwable? = null) : IntegrationException(message, cause)
   class ClientError(override val message: String, val code: Int, cause: Throwable? = null) : IntegrationException(message, cause)
   class ServerError(override val message: String, val code: Int, cause: Throwable? = null) : IntegrationException(message, cause)
   class UnqualifiedError(message: String, cause: Throwable? = null) : IntegrationException(message, cause)
 }
 
-private inline fun <reified T> map(lib: LibraryUnit, response: Response<T>) = when {
-  response.isSuccessful -> response.body() ?: when {
-    response.code() == 204 -> throw NoResponseError()
-    T::class == Unit::class -> Unit as T
-    else -> throw UnqualifiedError("no response when expected")
+private inline fun <reified T> map(lib: LibraryUnit, response: Response<T>): T = when {
+  response.isSuccessful -> {
+    response.body() ?: when {
+      response.code() == 204 -> throw NoResponseError()
+      T::class == Unit::class -> Unit as T
+      else -> throw UnqualifiedError("${response.httpFullDescriptor()} — empty body where one was expected")
+    }
   }
-  response.code() in 400..499 -> throw ClientError(message = response.message().ifBlank { "Client error" }, code = response.code())
-  response.code() in 500..599 -> throw ServerError(message = response.message().ifBlank { "Server error" }, code = response.code())
-  else -> throw UnqualifiedError("returned unexpected HTTP ${response.code()}: ${response.message()}")
+  response.code() in 400..499 -> throw ClientError(message = response.httpFullDescriptor(), code = response.code())
+  response.code() in 500..599 -> throw ServerError(message = response.httpFullDescriptor(), code = response.code())
+  else -> throw UnqualifiedError("${response.httpFullDescriptor()} — unexpected status")
 }
 
 private suspend inline fun <reified T> retry(lib: LibraryUnit, attempts: Int, crossinline operation: suspend (attempt: Int) -> T): T {
