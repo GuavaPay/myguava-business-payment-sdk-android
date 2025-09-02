@@ -50,8 +50,8 @@ internal class MetricaUnit(private val lib: LibraryUnit) {
 
     proguardUuid = "CCE0349D-B7A2-4A90-B688-87FEAA87F10D"
     addBundleId("CCE0349D-B7A2-4A90-B688-87FEAA87F10D")
-    release = "sdk@0.6.0"
-    dist = "0.6.0.public.release"
+    release = "sdk@0.6.1"
+    dist = "0.6.1.public.release"
 
     isCollectAdditionalContext = true
     isAnrEnabled = true
